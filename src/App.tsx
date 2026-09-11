@@ -566,6 +566,8 @@ export default function App() {
             onOpenPrintM02={() => setIsPrintM02Open(true)}
             onOpenPrintM05={() => setIsPrintM05Open(true)}
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenPassword={() => setIsPasswordModalOpen(true)}
           />
         )}
         {currentUser.role === 'dr' && (
