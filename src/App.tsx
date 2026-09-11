@@ -107,6 +107,7 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [passwordModalMode, setPasswordModalMode] = useState<'create' | 'change'>('change');
   const [isCommunicationModalOpen, setIsCommunicationModalOpen] = useState(false);
 
   // Print Modals
@@ -461,7 +462,7 @@ export default function App() {
               <ArrowRightLeft className="w-4 h-4" />
             </button>
 
-            <button onClick={() => setIsPasswordModalOpen(true)}
+            <button onClick={() => { setPasswordModalMode('change'); setIsPasswordModalOpen(true); }}
               className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
               title="Modifier mot de passe">
               <KeyRound className="w-4 h-4" />
@@ -567,7 +568,7 @@ export default function App() {
             onOpenPrintM05={() => setIsPrintM05Open(true)}
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
             onOpenProfile={() => setIsProfileModalOpen(true)}
-            onOpenPassword={() => setIsPasswordModalOpen(true)}
+            onOpenPassword={() => { setPasswordModalMode('create'); setIsPasswordModalOpen(true); }}
           />
         )}
         {currentUser.role === 'dr' && (
@@ -621,6 +622,7 @@ export default function App() {
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
         userEmail={currentUser.email}
+        mode={passwordModalMode}
       />
       <CommunicationModal
         isOpen={isCommunicationModalOpen}
