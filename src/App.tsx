@@ -492,7 +492,7 @@ export default function App() {
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
 
         {/* Right Role Sidebar */}
-        <aside className="no-print hidden lg:flex flex-col items-center gap-2 py-6 px-2 bg-slate-950 border-l border-slate-800 order-last w-16 sticky top-16 self-start h-[calc(100vh-4rem)]">
+        <aside className="no-print hidden lg:flex flex-col items-center gap-2 py-6 px-2 bg-slate-950 border-r border-slate-800 order-first w-16 sticky top-16 self-start h-[calc(100vh-4rem)]">
           {(['efp', 'stagiaire', 'formateur', 'dr'] as UserRole[]).map(role => {
             const colors: Record<UserRole, string> = {
               efp: 'bg-amber-600',
