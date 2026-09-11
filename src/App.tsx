@@ -492,7 +492,7 @@ export default function App() {
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
 
         {/* Right Role Sidebar */}
-        <aside className="no-print hidden lg:flex flex-col items-center gap-2 py-6 px-2 bg-slate-950 border-r border-slate-800 order-first w-16 sticky top-16 self-start h-[calc(100vh-4rem)]">
+        <aside className="no-print hidden lg:flex flex-col items-center gap-2 py-6 px-2 bg-slate-950 border-r border-slate-800 order-first w-28 sticky top-16 self-start h-[calc(100vh-4rem)]">
           {(['efp', 'stagiaire', 'formateur', 'dr'] as UserRole[]).map(role => {
             const colors: Record<UserRole, string> = {
               efp: 'bg-amber-600',
@@ -511,7 +511,7 @@ export default function App() {
                 key={role}
                 onClick={() => switchRole(role)}
                 title={labels[role]}
-                className={`w-10 h-28 rounded-xl text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center [writing-mode:vertical-rl] rotate-180 tracking-wide ${
+                className={`w-full py-3 px-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer text-center leading-tight ${
                   currentUser.role === role
                     ? `${colors[role]} text-white shadow-lg`
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
