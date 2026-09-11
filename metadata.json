@@ -1,0 +1,6 @@
+{
+  "name": "OFPPT - FPA Pilot",
+  "description": "Plateforme intégrée de gestion, suivi, audit réglementaire et indemnisation de la Formation Professionnelle Alternée (FPA) de l'OFPPT.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
