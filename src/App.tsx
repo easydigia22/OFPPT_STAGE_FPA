@@ -66,30 +66,15 @@ import {
   Loader2
 } from 'lucide-react';
 
-async function seedIfEmpty(
-  stages: Stage[],
-  indemnisations: any[]
-) {
-  if (stages.length === 0) {
-    await Promise.all([
-      ...mockUsers.map(u => db.profiles.upsert(u)),
-      ...mockStages.map(s => db.stages.upsert(s)),
-      ...mockVisites.map(v => db.visites.upsert(v)),
-      ...mockAudits.map(a => db.auditRecords.upsert(a)),
-      ...mockFichesM01.map(f => db.fichesM01.upsert(f)),
-      db.regulatoryDocs.upsertMany(mockRegulatoryDocs),
-      ...mockAffectations.map(a => db.affectations.upsert(a)),
-      ...mockPlannings.map(p => db.plannings.upsert(p)),
-      ...mockMessages.map(m => db.messages.insert(m)),
-      db.indemnisations.upsertMany(mockIndemnisationsEfp),
-    ]);
-  }
+async function seedRegulatoryDocs() {
+  const { data } = await import('./data/mockData').then(m => ({ data: m.mockRegulatoryDocs }));
+  await db.regulatoryDocs.upsertMany(data).catch(() => {});
 }
 
 export default function App() {
   // Data state — starts empty, loaded from Supabase
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(mockUsers[0]);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [stages, setStages] = useState<Stage[]>([]);
   const [visites, setVisites] = useState<Visite[]>([]);
   const [audits, setAudits] = useState<AuditRecord[]>([]);
@@ -144,53 +129,25 @@ export default function App() {
           db.indemnisations.getAll(),
         ]);
 
-        // Auto-seed on first run
-        await seedIfEmpty(dbStages, dbIndemn);
+        // Seed regulatory docs if missing (official templates)
+        if (dbDocs.length === 0) await seedRegulatoryDocs();
+        const finalDocs = dbDocs.length > 0 ? dbDocs : mockRegulatoryDocs;
 
-        // Reload after seeding if empty
-        const finalStages = dbStages.length > 0 ? dbStages : await db.stages.getAll();
-        const finalProfiles = dbProfiles.length > 0 ? dbProfiles : await db.profiles.getAll();
-        const finalVisites = dbVisites.length > 0 ? dbVisites : await db.visites.getAll();
-        const finalAudits = dbAudits.length > 0 ? dbAudits : await db.auditRecords.getAll();
-        const finalFiches = dbFiches.length > 0 ? dbFiches : await db.fichesM01.getAll();
-        const finalMessages = dbMessages.length > 0 ? dbMessages : await db.messages.getAll();
-        const finalDocs = dbDocs.length > 0 ? dbDocs : await db.regulatoryDocs.getAll();
-        const finalAffect = dbAffectations.length > 0 ? dbAffectations : await db.affectations.getAll();
-        const finalPlannings = dbPlannings.length > 0 ? dbPlannings : await db.plannings.getAll();
-        const finalIndemn = dbIndemn.length > 0 ? dbIndemn : await db.indemnisations.getAll();
-
-        setUsers(finalProfiles.length > 0 ? finalProfiles : mockUsers);
-        setStages(finalStages.length > 0 ? finalStages : mockStages);
-        setVisites(finalVisites.length > 0 ? finalVisites : mockVisites);
-        setAudits(finalAudits.length > 0 ? finalAudits : mockAudits);
-        setFichesM01(finalFiches.length > 0 ? finalFiches : mockFichesM01);
-        setMessages(finalMessages.length > 0 ? finalMessages : mockMessages);
-        setRegulatoryDocs(finalDocs.length > 0 ? finalDocs : mockRegulatoryDocs);
-        setAffectations(finalAffect.length > 0 ? finalAffect : mockAffectations);
-        setPlannings(finalPlannings.length > 0 ? finalPlannings : mockPlannings);
-        setIndemnisations(finalIndemn.length > 0 ? finalIndemn : mockIndemnisationsEfp);
-
-        if (finalProfiles.length > 0) {
-          setCurrentUser(finalProfiles[0]);
-          setSelectedStageForPrint(finalStages[0] ?? null);
-        } else {
-          setSelectedStageForPrint(mockStages[0]);
-        }
+        setUsers(dbProfiles);
+        setStages(dbStages);
+        setVisites(dbVisites);
+        setAudits(dbAudits);
+        setFichesM01(dbFiches);
+        setMessages(dbMessages);
+        setRegulatoryDocs(finalDocs);
+        setAffectations(dbAffectations);
+        setPlannings(dbPlannings);
+        setIndemnisations(dbIndemn);
+        // currentUser stays null — login required
       } catch (err) {
         console.error('Erreur chargement Supabase:', err);
-        setDbError('Connexion Supabase échouée — mode démo (données locales)');
-        // Fallback to mock data
-        setUsers(mockUsers);
-        setStages(mockStages);
-        setVisites(mockVisites);
-        setAudits(mockAudits);
-        setFichesM01(mockFichesM01);
-        setMessages(mockMessages);
+        setDbError('Connexion Supabase échouée. Vérifiez votre connexion.');
         setRegulatoryDocs(mockRegulatoryDocs);
-        setAffectations(mockAffectations);
-        setPlannings(mockPlannings);
-        setIndemnisations(mockIndemnisationsEfp);
-        setSelectedStageForPrint(mockStages[0]);
       } finally {
         setIsLoading(false);
       }
@@ -202,6 +159,8 @@ export default function App() {
     const targetUser = users.find(u => u.role === role);
     if (targetUser) setCurrentUser(targetUser);
   };
+
+  const handleLogout = () => setCurrentUser(null);
 
   // ─── Handlers (local state + Supabase persist) ──────────────────
 
@@ -398,7 +357,7 @@ export default function App() {
     }
   };
 
-  const activeBadge = getActiveRoleBadge(currentUser.role);
+  const activeBadge = getActiveRoleBadge(currentUser!.role);
 
   // ─── Loading screen ─────────────────────────────────────────────
   if (isLoading) {
@@ -409,6 +368,39 @@ export default function App() {
         </div>
         <Loader2 className="w-7 h-7 text-blue-400 animate-spin" />
         <p className="text-slate-400 text-sm">Chargement des données FPA…</p>
+      </div>
+    );
+  }
+
+  // ─── Login screen (no user authenticated) ───────────────────────
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6 p-4">
+        <div className="flex flex-col items-center gap-3 mb-2">
+          <div className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-serif font-black text-xl shadow-xl shadow-blue-500/30 border border-blue-400/30">
+            OFPPT
+          </div>
+          <div className="text-center">
+            <h1 className="text-2xl font-black text-white tracking-tight">FPA Pilot</h1>
+            <p className="text-xs text-slate-400 mt-1">Système de Gestion & d'Audit — Formation Professionnelle Alternée</p>
+          </div>
+        </div>
+        {dbError && (
+          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center py-2 px-4 rounded-lg max-w-sm">
+            ⚠️ {dbError}
+          </div>
+        )}
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-slate-200">
+          <AuthModal
+            isOpen={true}
+            onClose={() => {}}
+            users={users}
+            currentUser={null as any}
+            onSelectUser={(u) => setCurrentUser(u)}
+            hideClose
+          />
+        </div>
+        <p className="text-xs text-slate-600">Loi n° 36-96 • Note DRH N° 32/2017 • Année 2025/2026</p>
       </div>
     );
   }
@@ -503,6 +495,12 @@ export default function App() {
               className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
               title="Changer de rôle / Se connecter">
               <ArrowRightLeft className="w-4 h-4" />
+            </button>
+
+            <button onClick={handleLogout}
+              className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-xl transition-colors"
+              title="Se déconnecter">
+              <LogOut className="w-4 h-4" />
             </button>
 
             <button onClick={() => { setPasswordModalMode('change'); setIsPasswordModalOpen(true); }}

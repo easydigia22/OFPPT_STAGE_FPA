@@ -8,8 +8,9 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   users: UserProfile[];
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   onSelectUser: (user: UserProfile) => void;
+  hideClose?: boolean;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -18,6 +19,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   users,
   currentUser,
   onSelectUser,
+  hideClose = false,
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -96,9 +98,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs text-slate-500">Portail des acteurs de la Formation Professionnelle Alternée</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+          {!hideClose && (
+            <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
         {/* Quick Persona Switcher */}
