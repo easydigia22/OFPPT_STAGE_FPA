@@ -30,6 +30,7 @@ import { AuthModal } from './components/AuthModal';
 import { ProfileModal } from './components/ProfileModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { CommunicationModal } from './components/CommunicationModal';
+import { CreateStagiaireModal } from './components/CreateStagiaireModal';
 
 // Role Views
 import { StagiaireView } from './components/StagiaireView';
@@ -109,6 +110,8 @@ export default function App() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [passwordModalMode, setPasswordModalMode] = useState<'create' | 'change'>('change');
   const [isCommunicationModalOpen, setIsCommunicationModalOpen] = useState(false);
+
+  const [isCreateStagiaireOpen, setIsCreateStagiaireOpen] = useState(false);
 
   // Print Modals
   const [isPrintM01Open, setIsPrintM01Open] = useState(false);
@@ -326,6 +329,16 @@ export default function App() {
     db.affectations.insert(newAff).catch(console.error);
   };
 
+  const handleEditAffectation = (updated: AffectationFPA) => {
+    setAffectations(affectations.map(a => a.id === updated.id ? updated : a));
+    db.affectations.update(updated.id, updated).catch(console.error);
+  };
+
+  const handleDeleteAffectation = (id: string) => {
+    setAffectations(affectations.filter(a => a.id !== id));
+    db.affectations.delete(id).catch(console.error);
+  };
+
   const handleAddPlanning = (planData: Omit<PlanningAnnuel, 'id'>) => {
     const newPlan: PlanningAnnuel = {
       ...planData,
@@ -333,6 +346,36 @@ export default function App() {
     };
     setPlannings([newPlan, ...plannings]);
     db.plannings.insert(newPlan).catch(console.error);
+  };
+
+  const handleEditPlanning = (updated: PlanningAnnuel) => {
+    setPlannings(plannings.map(p => p.id === updated.id ? updated : p));
+    db.plannings.update(updated.id, updated).catch(console.error);
+  };
+
+  const handleDeletePlanning = (id: string) => {
+    setPlannings(plannings.filter(p => p.id !== id));
+    db.plannings.delete(id).catch(console.error);
+  };
+
+  const handleCreateStagiaire = (stagiaire: UserProfile) => {
+    setUsers(prev => [...prev, stagiaire]);
+    db.profiles.upsert(stagiaire).catch(console.error);
+  };
+
+  const handleDeleteStage = (id: string) => {
+    setStages(stages.filter(s => s.id !== id));
+    db.stages.delete(id).catch(console.error);
+  };
+
+  const handleDeleteVisite = (id: string) => {
+    setVisites(visites.filter(v => v.id !== id));
+    db.visites.delete(id).catch(console.error);
+  };
+
+  const handleDeleteAudit = (id: string) => {
+    setAudits(audits.filter(a => a.id !== id));
+    db.auditRecords.delete(id).catch(console.error);
   };
 
   const handleOpenContractPrint = (stage: Stage) => {
@@ -535,6 +578,9 @@ export default function App() {
             onUploadContract={handleUploadContract}
             onOpenContractPrint={handleOpenContractPrint}
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
+            onDeleteStage={handleDeleteStage}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            onOpenPassword={() => { setPasswordModalMode('change'); setIsPasswordModalOpen(true); }}
           />
         )}
         {currentUser.role === 'formateur' && (
@@ -550,6 +596,8 @@ export default function App() {
             onOpenPrintM01={() => setIsPrintM01Open(true)}
             onOpenPrintM04={() => setIsPrintM04Open(true)}
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
+            onDeleteVisite={handleDeleteVisite}
+            onDeleteStage={handleDeleteStage}
           />
         )}
         {currentUser.role === 'efp' && (
@@ -563,12 +611,20 @@ export default function App() {
             plannings={plannings}
             onAddAudit={handleAddAudit}
             onAddAffectation={handleAddAffectation}
+            onEditAffectation={handleEditAffectation}
+            onDeleteAffectation={handleDeleteAffectation}
             onAddPlanning={handleAddPlanning}
+            onEditPlanning={handleEditPlanning}
+            onDeletePlanning={handleDeletePlanning}
+            onDeleteStage={handleDeleteStage}
+            onDeleteVisite={handleDeleteVisite}
+            onDeleteAudit={handleDeleteAudit}
             onOpenPrintM02={() => setIsPrintM02Open(true)}
             onOpenPrintM05={() => setIsPrintM05Open(true)}
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
             onOpenProfile={() => setIsProfileModalOpen(true)}
             onOpenPassword={() => { setPasswordModalMode('create'); setIsPasswordModalOpen(true); }}
+            onOpenCreateStagiaire={() => setIsCreateStagiaireOpen(true)}
           />
         )}
         {currentUser.role === 'dr' && (
@@ -630,6 +686,14 @@ export default function App() {
         currentUser={currentUser}
         messages={messages}
         onSendMessage={handleSendMessage}
+      />
+
+      <CreateStagiaireModal
+        isOpen={isCreateStagiaireOpen}
+        onClose={() => setIsCreateStagiaireOpen(false)}
+        efp={currentUser.efp}
+        directionRegionale={currentUser.directionRegionale}
+        onCreateStagiaire={handleCreateStagiaire}
       />
 
       {/* Print Modals */}

@@ -15,7 +15,13 @@ import {
   Briefcase,
   Printer,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  Trash2,
+  User,
+  KeyRound,
+  ArrowRight,
+  Shield,
+  Star
 } from 'lucide-react';
 
 interface StagiaireViewProps {
@@ -27,6 +33,9 @@ interface StagiaireViewProps {
   onUploadContract: (stageId: string, fileName: string) => void;
   onOpenContractPrint: (stage: Stage) => void;
   onOpenMessaging: () => void;
+  onDeleteStage: (id: string) => void;
+  onOpenProfile: () => void;
+  onOpenPassword: () => void;
 }
 
 export const StagiaireView: React.FC<StagiaireViewProps> = ({
@@ -38,8 +47,12 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
   onUploadContract,
   onOpenContractPrint,
   onOpenMessaging,
+  onDeleteStage,
+  onOpenProfile,
+  onOpenPassword,
 }) => {
   const [activeTab, setActiveTab] = useState<'stages' | 'nouveau' | 'documents'>('stages');
+  const [deleteStageId, setDeleteStageId] = useState<string | null>(null);
   
   // New stage form state
   const [nomEntreprise, setNomEntreprise] = useState('');
@@ -98,14 +111,14 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
       dateFin,
       dureeHeures,
       missions,
-      statut: 'depose',
+      statut: 'en_recherche',
     });
 
-    setFormFeedback('Votre stage a été enregistré avec succès et soumis au formateur conseiller pour validation.');
+    setFormFeedback("Votre stage a été enregistré. Téléversez maintenant le contrat signé et cacheté par l'entreprise pour le soumettre à votre formateur.");
     setTimeout(() => {
       setActiveTab('stages');
       setFormFeedback('');
-    }, 1200);
+    }, 1800);
   };
 
   const handleFileChange = (stageId: string, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,10 +131,24 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
   // Filter downloadable docs for trainee
   const traineeDocs = docs.filter(d => d.cible.includes('all') || d.cible.includes('stagiaire'));
 
+  const profileComplete = !!currentUser.cvFileName;
+
+  // Statut labels français
+  const statutLabel: Record<string, { label: string; color: string }> = {
+    en_recherche: { label: 'En recherche', color: 'bg-amber-50 text-amber-800 border-amber-300' },
+    depose:       { label: 'Contrat déposé', color: 'bg-blue-50 text-blue-800 border-blue-300' },
+    valide_formateur: { label: 'Validé formateur', color: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+    rejete_formateur: { label: 'Rejeté', color: 'bg-red-50 text-red-800 border-red-300' },
+    visite_1:     { label: '1ère visite effectuée', color: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+    visite_2:     { label: '2ème visite effectuée', color: 'bg-emerald-50 text-emerald-800 border-emerald-300' },
+    termine:      { label: 'Terminé', color: 'bg-slate-100 text-slate-600 border-slate-300' },
+    evalue:       { label: 'Évalué', color: 'bg-purple-50 text-purple-800 border-purple-300' },
+  };
+
   return (
     <div className="space-y-6">
-      
-      {/* Top Banner with Quick Actions */}
+
+      {/* Top Banner */}
       <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -138,6 +165,23 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={onOpenProfile}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <User className="w-4 h-4" />
+              <span>Mon Profil</span>
+              {!profileComplete && (
+                <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" title="Profil incomplet — CV manquant" />
+              )}
+            </button>
+            <button
+              onClick={onOpenPassword}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Mot de passe</span>
+            </button>
+            <button
               onClick={() => setActiveTab('nouveau')}
               className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
             >
@@ -152,6 +196,89 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
               <span>Contacter Formateur</span>
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Alerte profil incomplet */}
+      {!profileComplete && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 text-xs text-amber-900">
+          <Star className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <strong>Complétez votre profil :</strong> Ajoutez votre CV pour qu'il soit consultable par votre formateur et les entreprises partenaires.
+          </div>
+          <button
+            onClick={onOpenProfile}
+            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold shrink-0 cursor-pointer"
+          >
+            Compléter
+          </button>
+        </div>
+      )}
+
+      {/* Guide Workflow — Processus de stage en 4 étapes */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+        <h2 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4">
+          Processus de réalisation du stage FPA — Étapes à suivre
+        </h2>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-0 text-xs">
+          {[
+            {
+              num: '1',
+              title: 'Télécharger les documents',
+              desc: 'Contrat, Demande de stage & Assurance',
+              icon: <Download className="w-4 h-4" />,
+              done: true,
+              onClick: () => setActiveTab('documents'),
+            },
+            {
+              num: '2',
+              title: 'Déclarer le stage',
+              desc: 'Saisir entreprise & tuteur',
+              icon: <PlusCircle className="w-4 h-4" />,
+              done: myStages.length > 0,
+              onClick: () => setActiveTab('nouveau'),
+            },
+            {
+              num: '3',
+              title: 'Déposer le contrat signé',
+              desc: "Cacheté et signé par l'entreprise",
+              icon: <Upload className="w-4 h-4" />,
+              done: myStages.some(s => !!s.contratSigneNomFichier),
+              onClick: () => setActiveTab('stages'),
+            },
+            {
+              num: '4',
+              title: 'Suivi formateur',
+              desc: 'Visites & communication',
+              icon: <MessageSquare className="w-4 h-4" />,
+              done: myStages.some(s => s.statut === 'visite_1' || s.statut === 'visite_2' || s.statut === 'termine' || s.statut === 'evalue'),
+              onClick: onOpenMessaging,
+            },
+          ].map((step, i, arr) => (
+            <React.Fragment key={step.num}>
+              <button
+                onClick={step.onClick}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all cursor-pointer text-left flex-1 min-w-0 ${
+                  step.done
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50/40'
+                }`}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 font-bold text-sm ${
+                  step.done ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'
+                }`}>
+                  {step.done ? <CheckCircle2 className="w-4 h-4" /> : step.num}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-bold truncate">{step.title}</p>
+                  <p className="text-[11px] opacity-70 truncate">{step.desc}</p>
+                </div>
+              </button>
+              {i < arr.length - 1 && (
+                <ArrowRight className="w-4 h-4 text-slate-300 shrink-0 hidden sm:block mx-1" />
+              )}
+            </React.Fragment>
+          ))}
         </div>
       </div>
 
@@ -238,13 +365,9 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
 
                     <div className="flex items-center gap-2">
                       <span className={`text-xs font-bold px-3 py-1 rounded-full border ${
-                        stage.statut === 'visite_2' || stage.statut === 'termine'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                          : stage.statut === 'visite_1'
-                          ? 'bg-blue-50 text-blue-800 border-blue-300'
-                          : 'bg-amber-50 text-amber-800 border-amber-300'
+                        (statutLabel[stage.statut] || { color: 'bg-slate-100 text-slate-700 border-slate-200' }).color
                       }`}>
-                        Statut : {stage.statut.replace('_', ' ').toUpperCase()}
+                        {(statutLabel[stage.statut] || { label: stage.statut }).label}
                       </span>
                       <button
                         onClick={() => onOpenContractPrint(stage)}
@@ -253,6 +376,13 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
                       >
                         <Printer className="w-3.5 h-3.5" />
                         <span>Contrat Officiel</span>
+                      </button>
+                      <button
+                        onClick={() => setDeleteStageId(stage.id)}
+                        title="Supprimer ce stage"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -580,50 +710,129 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
 
       {/* TAB 3: DOCUMENTS REGLEMENTAIRES & FORMULAIRES FPA */}
       {activeTab === 'documents' && (
-        <div className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-900">
-            <strong>Documentation officielle FPA :</strong> Téléchargez ci-dessous la demande de stage, le contrat officiel et l'attestation d'assurance requis pour vos démarches en entreprise.
+        <div className="space-y-5">
+
+          {/* Section : 3 documents obligatoires pour la recherche de stage */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Shield className="w-4 h-4 text-blue-600" />
+              <h3 className="text-sm font-bold text-slate-800">Documents obligatoires pour la réalisation du stage</h3>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5 text-xs text-blue-900 mb-3">
+              Téléchargez ces 3 documents <strong>avant de prospecter les entreprises</strong>. Ils vous seront demandés lors de votre démarche et lors du dépôt du contrat.
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {[
+                { id: 'doc-contrat-stage', badge: 'Contrat de stage', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
+                { id: 'doc-demande-stage', badge: 'Demande de stage', badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+                { id: 'doc-assurance-stage', badge: 'Attestation assurance', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
+              ].map(({ id, badge, badgeColor }) => {
+                const doc = traineeDocs.find(d => d.id === id);
+                if (!doc) return null;
+                return (
+                  <div key={doc.id} className="bg-white rounded-xl p-4 border-2 border-blue-100 hover:border-blue-300 shadow-xs flex flex-col justify-between transition-colors">
+                    <div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor} mb-2 inline-block`}>
+                        {badge}
+                      </span>
+                      <h4 className="font-bold text-sm text-slate-900 mb-1 leading-tight">{doc.titre}</h4>
+                      <p className="text-[11px] text-slate-500">{doc.description}</p>
+                    </div>
+                    <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-mono text-slate-400 truncate">{doc.tailleMo}</span>
+                      <button
+                        onClick={() => {
+                          if (doc.id === 'doc-contrat-stage' && currentStage) {
+                            onOpenContractPrint(currentStage);
+                          } else {
+                            const element = document.createElement('a');
+                            const file = new Blob([`Document officiel OFPPT: ${doc.titre}\nRéférence: ${doc.reference}\nAnnée de formation: 2025/2026\nDate: ${new Date().toLocaleDateString()}`], { type: 'text/plain' });
+                            element.href = URL.createObjectURL(file);
+                            element.download = doc.fichierNom;
+                            document.body.appendChild(element);
+                            element.click();
+                            document.body.removeChild(element);
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Télécharger</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {traineeDocs.map((doc) => (
-              <div key={doc.id} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:border-blue-300 transition-colors">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
-                      {doc.categorie.replace('_', ' ')}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">{doc.tailleMo}</span>
-                  </div>
-                  <h4 className="font-bold text-sm text-slate-900 mb-1">{doc.titre}</h4>
-                  <p className="text-xs text-slate-500 mb-3">{doc.description}</p>
-                </div>
-
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-slate-400">{doc.reference}</span>
-                  <button
-                    onClick={() => {
-                      if (doc.id === 'doc-contrat-stage' && currentStage) {
-                        onOpenContractPrint(currentStage);
-                      } else {
-                        // Simulate download
-                        const element = document.createElement('a');
-                        const file = new Blob([`Document officiel OFPPT: ${doc.titre}\nRéférence: ${doc.reference}\nAnnée de formation: 2025/2026\nDate: ${new Date().toLocaleDateString()}`], {type: 'text/plain'});
-                        element.href = URL.createObjectURL(file);
-                        element.download = doc.fichierNom;
-                        document.body.appendChild(element);
-                        element.click();
-                        document.body.removeChild(element);
-                      }
-                    }}
-                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Télécharger</span>
-                  </button>
-                </div>
+          {/* Autres documents disponibles */}
+          {traineeDocs.filter(d => !['doc-contrat-stage', 'doc-demande-stage', 'doc-assurance-stage'].includes(d.id)).length > 0 && (
+            <div>
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Autres documents & guides disponibles</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {traineeDocs
+                  .filter(d => !['doc-contrat-stage', 'doc-demande-stage', 'doc-assurance-stage'].includes(d.id))
+                  .map((doc) => (
+                    <div key={doc.id} className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-colors">
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 uppercase">
+                            {doc.categorie.replace('_', ' ')}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">{doc.tailleMo}</span>
+                        </div>
+                        <h4 className="font-bold text-sm text-slate-900 mb-1">{doc.titre}</h4>
+                        <p className="text-xs text-slate-500">{doc.description}</p>
+                      </div>
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between mt-3">
+                        <span className="text-[10px] font-mono text-slate-400 truncate">{doc.reference}</span>
+                        <button
+                          onClick={() => {
+                            const element = document.createElement('a');
+                            const file = new Blob([`Document officiel OFPPT: ${doc.titre}\nRéférence: ${doc.reference}\nAnnée de formation: 2025/2026\nDate: ${new Date().toLocaleDateString()}`], { type: 'text/plain' });
+                            element.href = URL.createObjectURL(file);
+                            element.download = doc.fichierNom;
+                            document.body.appendChild(element);
+                            element.click();
+                            document.body.removeChild(element);
+                          }}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ml-2"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Télécharger</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
-            ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Confirmation suppression stage */}
+      {deleteStageId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer ce stage ?</h3>
+              <p className="text-xs text-slate-500 mt-1">Cette convention de stage sera définitivement supprimée.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeleteStageId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeleteStage(deleteStageId); setDeleteStageId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
           </div>
         </div>
       )}

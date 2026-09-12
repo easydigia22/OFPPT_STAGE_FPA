@@ -16,7 +16,8 @@ import {
   Search,
   Filter,
   Eye,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 
 interface FormateurViewProps {
@@ -31,6 +32,8 @@ interface FormateurViewProps {
   onOpenPrintM01: () => void;
   onOpenPrintM04: () => void;
   onOpenMessaging: () => void;
+  onDeleteVisite: (id: string) => void;
+  onDeleteStage: (id: string) => void;
 }
 
 export const FormateurView: React.FC<FormateurViewProps> = ({
@@ -45,8 +48,12 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   onOpenPrintM01,
   onOpenPrintM04,
   onOpenMessaging,
+  onDeleteVisite,
+  onDeleteStage,
 }) => {
   const [activeTab, setActiveTab] = useState<'stagiaires' | 'visites' | 'imprimes' | 'reglementation'>('stagiaires');
+  const [deleteVisiteId, setDeleteVisiteId] = useState<string | null>(null);
+  const [deleteStageId, setDeleteStageId] = useState<string | null>(null);
   const [selectedGroupe, setSelectedGroupe] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -389,21 +396,27 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
 
                         {/* Actions */}
                         <td className="p-3 text-right">
-                          {stage.statut === 'depose' ? (
-                            <button
-                              onClick={() => onValidateStage(stage.id)}
-                              className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
-                            >
-                              Valider stage
+                          <div className="flex items-center justify-end gap-1.5">
+                            {stage.statut === 'depose' ? (
+                              <button
+                                onClick={() => onValidateStage(stage.id)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                              >
+                                Valider stage
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => openVisiteDialog(stage, 1)}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium transition-colors cursor-pointer"
+                              >
+                                Gérer visites
+                              </button>
+                            )}
+                            <button onClick={() => setDeleteStageId(stage.id)} title="Supprimer ce stage"
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                          ) : (
-                            <button
-                              onClick={() => openVisiteDialog(stage, 1)}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-medium transition-colors cursor-pointer"
-                            >
-                              Gérer visites
-                            </button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -447,6 +460,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
                     <th className="p-3">Tuteur présent</th>
                     <th className="p-3">Assiduité</th>
                     <th className="p-3">Statut Audit</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -485,6 +499,12 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
                             En attente audit 20%
                           </span>
                         )}
+                      </td>
+                      <td className="p-3 text-right">
+                        <button onClick={() => setDeleteVisiteId(vis.id)} title="Supprimer cette visite"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -742,6 +762,56 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation suppression visite */}
+      {deleteVisiteId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer cette visite ?</h3>
+              <p className="text-xs text-slate-500 mt-1">L'enregistrement de cette visite sera définitivement supprimé.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeleteVisiteId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeleteVisite(deleteVisiteId); setDeleteVisiteId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation suppression stage */}
+      {deleteStageId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer ce stage ?</h3>
+              <p className="text-xs text-slate-500 mt-1">Cette convention de stage sera définitivement supprimée.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeleteStageId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeleteStage(deleteStageId); setDeleteStageId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
           </div>
         </div>
       )}

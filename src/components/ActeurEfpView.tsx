@@ -29,7 +29,10 @@ import {
   Building2,
   FilePlus,
   X,
-  AlertTriangle
+  AlertTriangle,
+  Pencil,
+  Trash2,
+  UserPlus
 } from 'lucide-react';
 
 interface ActeurEfpViewProps {
@@ -42,12 +45,20 @@ interface ActeurEfpViewProps {
   plannings: PlanningAnnuel[];
   onAddAudit: (audit: Omit<AuditRecord, 'id' | 'typeAudit' | 'dateAudit' | 'auditeurId' | 'auditeurNom'>) => void;
   onAddAffectation: (aff: Omit<AffectationFPA, 'id' | 'dateAffectation'>) => void;
+  onEditAffectation: (aff: AffectationFPA) => void;
+  onDeleteAffectation: (id: string) => void;
   onAddPlanning: (plan: Omit<PlanningAnnuel, 'id'>) => void;
+  onEditPlanning: (plan: PlanningAnnuel) => void;
+  onDeletePlanning: (id: string) => void;
+  onDeleteStage: (id: string) => void;
+  onDeleteVisite: (id: string) => void;
+  onDeleteAudit: (id: string) => void;
   onOpenPrintM02: () => void;
   onOpenPrintM05: () => void;
   onOpenMessaging: () => void;
   onOpenProfile?: () => void;
   onOpenPassword?: () => void;
+  onOpenCreateStagiaire?: () => void;
 }
 
 type TabId = 'affectations' | 'planning' | 'documents' | 'suivi' | 'audit' | 'reglementation';
@@ -69,12 +80,20 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   plannings,
   onAddAudit,
   onAddAffectation,
+  onEditAffectation,
+  onDeleteAffectation,
   onAddPlanning,
+  onEditPlanning,
+  onDeletePlanning,
+  onDeleteStage,
+  onDeleteVisite,
+  onDeleteAudit,
   onOpenPrintM02,
   onOpenPrintM05,
   onOpenMessaging,
   onOpenProfile,
   onOpenPassword,
+  onOpenCreateStagiaire,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('affectations');
 
@@ -85,7 +104,7 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   const [statutConformite, setStatutConformite] = useState<'Conforme' | 'Non Conforme' | 'À clarifier'>('Conforme');
   const [auditObs, setAuditObs] = useState('');
 
-  // Affectation modal
+  // Affectation modal (création)
   const [isAffModalOpen, setIsAffModalOpen] = useState(false);
   const [affFormateurNom, setAffFormateurNom] = useState('');
   const [affMatricule, setAffMatricule] = useState('');
@@ -94,6 +113,19 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   const [affEffectif, setAffEffectif] = useState(25);
   const [affDecoupage, setAffDecoupage] = useState<string | null>(null);
 
+  // Affectation modal (édition)
+  const [isEditAffModalOpen, setIsEditAffModalOpen] = useState(false);
+  const [editingAff, setEditingAff] = useState<AffectationFPA | null>(null);
+  const [editFormateurNom, setEditFormateurNom] = useState('');
+  const [editMatricule, setEditMatricule] = useState('');
+  const [editFiliere, setEditFiliere] = useState('');
+  const [editGroupe, setEditGroupe] = useState('');
+  const [editEffectif, setEditEffectif] = useState(25);
+  const [editDecoupage, setEditDecoupage] = useState<string | null>(null);
+
+  // Confirmation suppression
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
   // Planning modal
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [planFiliere, setPlanFiliere] = useState('');
@@ -101,6 +133,22 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   const [planDebut, setPlanDebut] = useState('2026-01-15');
   const [planFin, setPlanFin] = useState('2026-06-30');
   const [planStagiaires, setPlanStagiaires] = useState(30);
+
+  // Planning edit modal
+  const [isEditPlanModalOpen, setIsEditPlanModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<PlanningAnnuel | null>(null);
+  const [editPlanFiliere, setEditPlanFiliere] = useState('');
+  const [editPlanSession, setEditPlanSession] = useState('');
+  const [editPlanDebut, setEditPlanDebut] = useState('');
+  const [editPlanFin, setEditPlanFin] = useState('');
+  const [editPlanStagiaires, setEditPlanStagiaires] = useState(30);
+  const [editPlanStatut, setEditPlanStatut] = useState<'Actif' | 'En attente' | 'Clôturé'>('Actif');
+
+  // Delete confirmations
+  const [deletePlanId, setDeletePlanId] = useState<string | null>(null);
+  const [deleteStageId, setDeleteStageId] = useState<string | null>(null);
+  const [deleteVisiteId, setDeleteVisiteId] = useState<string | null>(null);
+  const [deleteAuditId, setDeleteAuditId] = useState<string | null>(null);
 
   // Documents FPA uploads (simulated)
   const [uploadedDocs, setUploadedDocs] = useState<UploadedDoc[]>([
@@ -161,6 +209,68 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
     });
     setIsAffModalOpen(false);
     setAffFormateurNom(''); setAffMatricule(''); setAffFiliere(''); setAffGroupe(''); setAffDecoupage(null);
+  };
+
+  const openEditAff = (aff: AffectationFPA) => {
+    setEditingAff(aff);
+    setEditFormateurNom(aff.formateurNom);
+    setEditMatricule(aff.formateurMatricule);
+    setEditFiliere(aff.filiere);
+    setEditGroupe(aff.groupe);
+    setEditEffectif(aff.effectifStagiaires);
+    setEditDecoupage(aff.decoupageNomFichier || null);
+    setIsEditAffModalOpen(true);
+  };
+
+  const handleSaveEditAff = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAff) return;
+    onEditAffectation({
+      ...editingAff,
+      formateurId: `formateur-${editMatricule}`,
+      formateurMatricule: editMatricule,
+      formateurNom: editFormateurNom,
+      filiere: editFiliere,
+      groupe: editGroupe,
+      effectifStagiaires: editEffectif,
+      decoupageNomFichier: editDecoupage || editingAff.decoupageNomFichier,
+    });
+    setIsEditAffModalOpen(false);
+    setEditingAff(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmId) {
+      onDeleteAffectation(deleteConfirmId);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const openEditPlan = (plan: PlanningAnnuel) => {
+    setEditingPlan(plan);
+    setEditPlanFiliere(plan.filiere);
+    setEditPlanSession(plan.session);
+    setEditPlanDebut(plan.dateDebut);
+    setEditPlanFin(plan.dateFin);
+    setEditPlanStagiaires(plan.nbStagiairesPrevus);
+    setEditPlanStatut(plan.statut);
+    setIsEditPlanModalOpen(true);
+  };
+
+  const handleSaveEditPlan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlan) return;
+    onEditPlanning({
+      ...editingPlan,
+      filiere: editPlanFiliere,
+      session: editPlanSession,
+      dateDebut: editPlanDebut,
+      dateFin: editPlanFin,
+      nbStagiairesPrevus: editPlanStagiaires,
+      statut: editPlanStatut,
+    });
+    setIsEditPlanModalOpen(false);
+    setEditingPlan(null);
   };
 
   const handleCreatePlan = (e: React.FormEvent) => {
@@ -239,6 +349,13 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                 className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
                 <KeyRound className="w-4 h-4" />
                 <span>Mot de passe</span>
+              </button>
+            )}
+            {onOpenCreateStagiaire && (
+              <button onClick={onOpenCreateStagiaire}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm">
+                <UserPlus className="w-4 h-4" />
+                <span>Créer un stagiaire</span>
               </button>
             )}
             <button onClick={onOpenPrintM02}
@@ -354,7 +471,23 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                 <div key={aff.id} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black font-mono text-amber-800 bg-amber-100 px-2.5 py-0.5 rounded-full">{aff.groupe}</span>
-                    <span className="text-[10px] text-slate-400">Année {aff.annee}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[10px] text-slate-400">Année {aff.annee}</span>
+                      <button
+                        onClick={() => openEditAff(aff)}
+                        title="Modifier"
+                        className="p-1 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmId(aff.id)}
+                        title="Supprimer"
+                        className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                   <h4 className="font-bold text-sm text-slate-900">{aff.filiere}</h4>
                   <div className="text-xs text-slate-600 space-y-0.5">
@@ -416,6 +549,7 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                     <th className="p-3 text-center">Heures</th>
                     <th className="p-3 text-center">Stagiaires</th>
                     <th className="p-3 text-center">Statut</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -432,10 +566,22 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                       <td className="p-3 text-center">
                         <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">{plan.statut}</span>
                       </td>
+                      <td className="p-3 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => openEditPlan(plan)} title="Modifier"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors cursor-pointer">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setDeletePlanId(plan.id)} title="Supprimer"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {plannings.length === 0 && (
-                    <tr><td colSpan={6} className="p-6 text-center text-slate-400">Aucune session planifiée.</td></tr>
+                    <tr><td colSpan={7} className="p-6 text-center text-slate-400">Aucune session planifiée.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -572,6 +718,7 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                     <th className="p-3 text-center">Contrat</th>
                     <th className="p-3 text-center">Audit EFP</th>
                     <th className="p-3 text-center">Validation EFP</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -628,6 +775,12 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                             </button>
                           )}
                         </td>
+                        <td className="p-3 text-right">
+                          <button onClick={() => setDeleteStageId(stage.id)} title="Supprimer ce stage"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -655,6 +808,7 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                     <th className="p-3 text-center">Date effectuée</th>
                     <th className="p-3 text-center">Assiduité</th>
                     <th className="p-3 text-center">Statut visite</th>
+                    <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -680,6 +834,12 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                       </td>
                       <td className="p-3 text-center">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">{v.statut}</span>
+                      </td>
+                      <td className="p-3 text-right">
+                        <button onClick={() => setDeleteVisiteId(v.id)} title="Supprimer cette visite"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -763,11 +923,19 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                           )}
                         </td>
                         <td className="p-3 text-right">
-                          <button
-                            onClick={() => openAuditDialog(vis)}
-                            className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors">
-                            {auditForThis ? 'Modifier' : 'Auditer'}
-                          </button>
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => openAuditDialog(vis)}
+                              className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors">
+                              {auditForThis ? 'Modifier' : 'Auditer'}
+                            </button>
+                            {auditForThis && (
+                              <button onClick={() => setDeleteAuditId(auditForThis.id)} title="Supprimer cet audit"
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -940,6 +1108,96 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
         </div>
       )}
 
+      {/* Modal édition affectation */}
+      {isEditAffModalOpen && editingAff && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-900">Modifier l'affectation — {editingAff.groupe}</h3>
+              <button onClick={() => setIsEditAffModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSaveEditAff} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nom du formateur conseiller *</label>
+                <input type="text" required value={editFormateurNom} onChange={(e) => setEditFormateurNom(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg" placeholder="Prénom NOM" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Matricule *</label>
+                  <input type="text" required value={editMatricule} onChange={(e) => setEditMatricule(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono" placeholder="14582" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Code groupe *</label>
+                  <input type="text" required value={editGroupe} onChange={(e) => setEditGroupe(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono" placeholder="DEV203" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Filière *</label>
+                <input type="text" required value={editFiliere} onChange={(e) => setEditFiliere(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg" placeholder="Développement Digital" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Effectif de stagiaires</label>
+                <input type="number" min={1} value={editEffectif} onChange={(e) => setEditEffectif(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Découpage de programme (PDF)</label>
+                <div className="flex items-center gap-2 border border-dashed border-slate-300 rounded-lg px-3 py-2 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => document.getElementById('decoupe-edit-upload')?.click()}>
+                  <Upload className="w-4 h-4 text-slate-400" />
+                  <span className="text-xs text-slate-500">{editDecoupage || 'Conserver le fichier actuel ou en sélectionner un nouveau'}</span>
+                  <input id="decoupe-edit-upload" type="file" accept=".pdf" className="hidden"
+                    onChange={(e) => setEditDecoupage(e.target.files?.[0]?.name || null)} />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onClick={() => setIsEditAffModalOpen(false)}
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer">Annuler</button>
+                <button type="submit"
+                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer">
+                  Enregistrer les modifications
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmation suppression */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer ce groupe ?</h3>
+              <p className="text-xs text-slate-500 mt-1">
+                Cette action est irréversible. Le groupe et son affectation seront définitivement supprimés.
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer"
+              >
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Planning modal */}
       {isPlanModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
@@ -985,6 +1243,164 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal édition planning */}
+      {isEditPlanModalOpen && editingPlan && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-slate-900">Modifier la session de planning</h3>
+              <button onClick={() => setIsEditPlanModalOpen(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSaveEditPlan} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Intitulé de la session *</label>
+                <input type="text" required value={editPlanSession} onChange={(e) => setEditPlanSession(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Filière *</label>
+                <input type="text" required value={editPlanFiliere} onChange={(e) => setEditPlanFiliere(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date début</label>
+                  <input type="date" value={editPlanDebut} onChange={(e) => setEditPlanDebut(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Date fin</label>
+                  <input type="date" value={editPlanFin} onChange={(e) => setEditPlanFin(e.target.value)}
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre de stagiaires prévus</label>
+                <input type="number" min={1} value={editPlanStagiaires} onChange={(e) => setEditPlanStagiaires(Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Statut</label>
+                <select value={editPlanStatut} onChange={(e) => setEditPlanStatut(e.target.value as any)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white">
+                  <option value="Actif">Actif</option>
+                  <option value="En attente">En attente</option>
+                  <option value="Clôturé">Clôturé</option>
+                </select>
+              </div>
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onClick={() => setIsEditPlanModalOpen(false)}
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:text-slate-900 cursor-pointer">Annuler</button>
+                <button type="submit"
+                  className="px-4 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold cursor-pointer">
+                  Enregistrer les modifications
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation suppression planning */}
+      {deletePlanId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer cette session ?</h3>
+              <p className="text-xs text-slate-500 mt-1">Cette session sera définitivement supprimée du planning.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeletePlanId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeletePlanning(deletePlanId); setDeletePlanId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation suppression stage */}
+      {deleteStageId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer ce stage ?</h3>
+              <p className="text-xs text-slate-500 mt-1">Cette convention de stage sera définitivement supprimée.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeleteStageId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeleteStage(deleteStageId); setDeleteStageId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation suppression visite */}
+      {deleteVisiteId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer cette visite ?</h3>
+              <p className="text-xs text-slate-500 mt-1">L'enregistrement de cette visite sera définitivement supprimé.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeleteVisiteId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeleteVisite(deleteVisiteId); setDeleteVisiteId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation suppression audit */}
+      {deleteAuditId && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center space-y-4">
+            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="font-bold text-slate-900 text-base">Supprimer cet audit ?</h3>
+              <p className="text-xs text-slate-500 mt-1">Le rapport d'audit EFP sera définitivement supprimé. La visite pourra être ré-auditée.</p>
+            </div>
+            <div className="flex gap-3 justify-center pt-1">
+              <button onClick={() => setDeleteAuditId(null)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer">
+                Annuler
+              </button>
+              <button onClick={() => { onDeleteAudit(deleteAuditId); setDeleteAuditId(null); }}
+                className="px-4 py-2 text-xs font-semibold bg-red-600 hover:bg-red-700 text-white rounded-lg cursor-pointer">
+                Supprimer définitivement
+              </button>
+            </div>
           </div>
         </div>
       )}
