@@ -56,9 +56,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         }
       }
 
-      // Fallback: find profile by email (no password check — demo/internal mode)
+      // Fallback: find profile by email
       const profile = await db.profiles.getByEmail(email);
       if (profile) {
+        // If account has a provisional password, check it
+        if (profile.tempPassword && profile.passwordChanged === false) {
+          if (password !== profile.tempPassword) {
+            setError('Mot de passe provisoire incorrect.');
+            return;
+          }
+        }
         onSelectUser(profile);
         onClose();
         return;

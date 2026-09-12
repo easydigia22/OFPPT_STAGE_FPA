@@ -19,7 +19,9 @@ export interface UserProfile {
   avatarUrl?: string;
   cvFileName?: string;
   cvUploadedAt?: string;
-  cvFileContent?: string; // base64 or mock preview
+  cvFileContent?: string;
+  tempPassword?: string;   // mot de passe provisoire (premier login)
+  passwordChanged?: boolean; // false = doit changer au prochain login
 }
 
 export type StageStatus = 

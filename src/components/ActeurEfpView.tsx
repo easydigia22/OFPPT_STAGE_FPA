@@ -8,6 +8,8 @@ import {
   AffectationFPA,
   PlanningAnnuel
 } from '../types';
+import { ImportStagiairesModal } from './ImportStagiairesModal';
+import { db } from '../lib/db';
 import {
   ShieldCheck,
   Users,
@@ -96,6 +98,7 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   onOpenCreateStagiaire,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('affectations');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Audit modal
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
@@ -358,6 +361,11 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                 <span>Créer un stagiaire</span>
               </button>
             )}
+            <button onClick={() => setIsImportModalOpen(true)}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm">
+              <Upload className="w-4 h-4" />
+              <span>Importer Excel</span>
+            </button>
             <button onClick={onOpenPrintM02}
               className="px-3.5 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer">
               <Printer className="w-4 h-4" />
@@ -1450,6 +1458,15 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
         </div>
       )}
 
+      <ImportStagiairesModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        efp={currentUser.efp}
+        directionRegionale={currentUser.directionRegionale}
+        onImport={async (stagiaires) => {
+          await db.profiles.bulkUpsert(stagiaires);
+        }}
+      />
     </div>
   );
 };

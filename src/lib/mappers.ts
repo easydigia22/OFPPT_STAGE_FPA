@@ -13,6 +13,8 @@ export function profileFromDB(r: any): UserProfile {
     groupe: r.groupe ?? undefined, avatarUrl: r.avatar_url ?? undefined,
     cvFileName: r.cv_file_name ?? undefined, cvUploadedAt: r.cv_uploaded_at ?? undefined,
     cvFileContent: r.cv_file_content ?? undefined,
+    tempPassword: r.temp_password ?? undefined,
+    passwordChanged: r.password_changed ?? false,
   };
 }
 export function profileToDB(u: UserProfile) {
@@ -23,6 +25,8 @@ export function profileToDB(u: UserProfile) {
     filiere: u.filiere ?? null, groupe: u.groupe ?? null,
     avatar_url: u.avatarUrl ?? null, cv_file_name: u.cvFileName ?? null,
     cv_uploaded_at: u.cvUploadedAt ?? null, cv_file_content: u.cvFileContent ?? null,
+    temp_password: u.tempPassword ?? null,
+    password_changed: u.passwordChanged ?? false,
   };
 }
 

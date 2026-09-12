@@ -36,6 +36,9 @@ export const db = {
         await supabase.from('profiles').update(profileToDB(updated)).eq('id', id);
       }
     },
+    async bulkUpsert(users: UserProfile[]): Promise<void> {
+      await supabase.from('profiles').upsert(users.map(profileToDB), { onConflict: 'email' });
+    },
   },
 
   stages: {

@@ -93,7 +93,6 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [passwordModalMode, setPasswordModalMode] = useState<'create' | 'change'>('change');
   const [isCommunicationModalOpen, setIsCommunicationModalOpen] = useState(false);
 
   const [isCreateStagiaireOpen, setIsCreateStagiaireOpen] = useState(false);
@@ -504,7 +503,7 @@ export default function App() {
               <LogOut className="w-4 h-4" />
             </button>
 
-            <button onClick={() => { setPasswordModalMode('change'); setIsPasswordModalOpen(true); }}
+            <button onClick={() => { setIsPasswordModalOpen(true); }}
               className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors"
               title="Modifier mot de passe">
               <KeyRound className="w-4 h-4" />
@@ -579,7 +578,7 @@ export default function App() {
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
             onDeleteStage={handleDeleteStage}
             onOpenProfile={() => setIsProfileModalOpen(true)}
-            onOpenPassword={() => { setPasswordModalMode('change'); setIsPasswordModalOpen(true); }}
+            onOpenPassword={() => { setIsPasswordModalOpen(true); }}
           />
         )}
         {currentUser.role === 'formateur' && (
@@ -622,7 +621,7 @@ export default function App() {
             onOpenPrintM05={() => setIsPrintM05Open(true)}
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
             onOpenProfile={() => setIsProfileModalOpen(true)}
-            onOpenPassword={() => { setPasswordModalMode('create'); setIsPasswordModalOpen(true); }}
+            onOpenPassword={() => { setIsPasswordModalOpen(true); }}
             onOpenCreateStagiaire={() => setIsCreateStagiaireOpen(true)}
           />
         )}
@@ -673,12 +672,27 @@ export default function App() {
         currentUser={currentUser}
         onUpdateUser={handleUserUpdate}
       />
-      <ChangePasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => setIsPasswordModalOpen(false)}
-        userEmail={currentUser.email}
-        mode={passwordModalMode}
-      />
+      {/* Forced first-login password change */}
+      {currentUser.passwordChanged === false && currentUser.tempPassword && (
+        <ChangePasswordModal
+          user={currentUser}
+          onPasswordChanged={(updated) => {
+            setCurrentUser(updated);
+            setUsers(users.map(u => u.id === updated.id ? updated : u));
+          }}
+        />
+      )}
+      {/* Voluntary password change */}
+      {isPasswordModalOpen && !(currentUser.passwordChanged === false && currentUser.tempPassword) && (
+        <ChangePasswordModal
+          user={currentUser}
+          onPasswordChanged={(updated) => {
+            setCurrentUser(updated);
+            setUsers(users.map(u => u.id === updated.id ? updated : u));
+            setIsPasswordModalOpen(false);
+          }}
+        />
+      )}
       <CommunicationModal
         isOpen={isCommunicationModalOpen}
         onClose={() => setIsCommunicationModalOpen(false)}
