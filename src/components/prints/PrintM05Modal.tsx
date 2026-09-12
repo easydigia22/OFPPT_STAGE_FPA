@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Printer, Coins } from 'lucide-react';
 import { Visite } from '../../types';
 
@@ -14,37 +14,15 @@ export const PrintM05Modal: React.FC<PrintM05ModalProps> = ({
   isOpen,
   onClose,
   visites,
-  efp = 'ISFO Casablanca (Sidi Maârouf)',
+  efp = '',
   directionRegionale = 'DR Casablanca-Settat',
 }) => {
   if (!isOpen) return null;
 
   const currentPeriod = new Date().toLocaleDateString('fr-FR', { month: '2-digit', year: 'numeric' });
 
-  // Group visits by trainer
-  const formateurs = [
-    {
-      matricule: '14582',
-      nom: 'Mohammed EL ALAMI',
-      entreprises: 2,
-      stagiaires: 3,
-      indemnite: 2400, // Proposed indemnity (calculated based on validated visits)
-    },
-    {
-      matricule: '18930',
-      nom: 'Hassan BOUZID',
-      entreprises: 1,
-      stagiaires: 1,
-      indemnite: 800,
-    },
-    {
-      matricule: '21045',
-      nom: 'Khalid ZOUHIR',
-      entreprises: 1,
-      stagiaires: 1,
-      indemnite: 800,
-    }
-  ];
+  // Données réelles depuis Supabase (vide au démarrage)
+  const formateurs: { matricule: string; nom: string; entreprises: number; stagiaires: number; indemnite: number; }[] = [];
 
   const totalIndemnites = formateurs.reduce((acc, f) => acc + f.indemnite, 0);
 
@@ -200,3 +178,4 @@ export const PrintM05Modal: React.FC<PrintM05ModalProps> = ({
     </div>
   );
 };
+

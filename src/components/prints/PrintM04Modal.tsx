@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Printer } from 'lucide-react';
 import { Stage, Visite } from '../../types';
 
@@ -20,7 +20,7 @@ export const PrintM04Modal: React.FC<PrintM04ModalProps> = ({
   visites,
   formateurName,
   formateurMatricule = '14582',
-  efp = 'ISFO Casablanca (Sidi Maârouf)',
+  efp = '',
   directionRegionale = 'DR Casablanca-Settat',
 }) => {
   if (!isOpen) return null;
@@ -209,3 +209,4 @@ export const PrintM04Modal: React.FC<PrintM04ModalProps> = ({
     </div>
   );
 };
+

@@ -16,13 +16,8 @@ export const PrintM06Modal: React.FC<PrintM06ModalProps> = ({
 
   const currentPeriod = new Date().toLocaleDateString('fr-FR', { month: '2-digit', year: 'numeric' });
 
-  const regionalFormateurs = [
-    { matricule: '14582', nom: 'Mohammed EL ALAMI', efp: 'ISFO Casablanca', entreprises: 2, stagiaires: 3, montant: 2400 },
-    { matricule: '18930', nom: 'Hassan BOUZID', efp: 'ISFO Casablanca', entreprises: 1, stagiaires: 1, montant: 800 },
-    { matricule: '21045', nom: 'Khalid ZOUHIR', efp: 'CFMA Nouaceur', entreprises: 1, stagiaires: 1, montant: 800 },
-    { matricule: '11204', nom: 'Nadia BENNANI', efp: 'ISGI Casablanca', entreprises: 3, stagiaires: 4, montant: 3200 },
-    { matricule: '16789', nom: 'Youssef CHRAIBI', efp: 'ITA Mohammedia', entreprises: 2, stagiaires: 3, montant: 2400 },
-  ];
+  // Données réelles depuis Supabase (vide au démarrage)
+  const regionalFormateurs: { matricule: string; nom: string; efp: string; entreprises: number; stagiaires: number; montant: number; }[] = [];
 
   const totalRegional = regionalFormateurs.reduce((acc, curr) => acc + curr.montant, 0);
 

@@ -38,10 +38,10 @@ export const CommunicationModal: React.FC<CommunicationModalProps> = ({
     if (!contenu.trim()) return;
 
     let destName = 'Formateur Conseiller FPA';
-    if (selectedRecipientRole === 'stagiaire') destName = 'Youssef KADIRI (Stagiaire)';
-    if (selectedRecipientRole === 'efp') destName = 'Direction EFP (Driss TAZI)';
-    if (selectedRecipientRole === 'dr') destName = 'Direction Régionale (Amina BENCHEIKH)';
-    if (selectedRecipientRole === 'entreprise') destName = 'Tuteur Entreprise (Capgemini)';
+    if (selectedRecipientRole === 'stagiaire') destName = 'Stagiaire';
+    if (selectedRecipientRole === 'efp') destName = 'Direction EFP';
+    if (selectedRecipientRole === 'dr') destName = 'Direction Régionale';
+    if (selectedRecipientRole === 'entreprise') destName = 'Tuteur Entreprise';
 
     onSendMessage({
       expediteurId: currentUser.id,

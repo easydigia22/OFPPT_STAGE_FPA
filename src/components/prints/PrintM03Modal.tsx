@@ -110,7 +110,7 @@ export const PrintM03Modal: React.FC<PrintM03ModalProps> = ({
                   drAudits.map((a) => (
                     <tr key={a.id} className="align-top">
                       <td className="border-r-2 border-black p-2 font-mono">{a.dateAudit}</td>
-                      <td className="border-r-2 border-black p-2 font-semibold text-slate-800">ISFO Casablanca</td>
+                      <td className="border-r-2 border-black p-2 font-semibold text-slate-800"></td>
                       <td className="border-r-2 border-black p-2 font-mono font-bold">{a.formateurMatricule}</td>
                       <td className="border-r-2 border-black p-2 font-semibold uppercase">{a.formateurNom}</td>
                       <td className="border-r-2 border-black p-2 font-semibold uppercase">{a.stagiaireNom}</td>

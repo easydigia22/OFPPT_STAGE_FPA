@@ -19,53 +19,8 @@ export const PrintTableauMinistereModal: React.FC<PrintTableauMinistereModalProp
     window.print();
   };
 
-  // Data aggregations by filiere for Ministry reporting
-  const ministryData = [
-    {
-      filiere: 'Développement Digital (Full-Stack)',
-      secteur: 'Technologies de l’Information & Offshoring',
-      niveau: 'TS',
-      dureeEntreprise: '800h (50% MH)',
-      inscritsFpa: 46,
-      placesEntreprise: 46,
-      visitesRealisees: 42,
-      tauxInsertionPrevu: '88%',
-      entreprisesPartenaires: 18
-    },
-    {
-      filiere: 'Gestion des Entreprises (Comptabilité/Finance)',
-      secteur: 'Tertiaire / Services',
-      niveau: 'TS',
-      dureeEntreprise: '800h (50% MH)',
-      inscritsFpa: 28,
-      placesEntreprise: 28,
-      visitesRealisees: 26,
-      tauxInsertionPrevu: '82%',
-      entreprisesPartenaires: 12
-    },
-    {
-      filiere: 'Génie Électromécanique Aéronautique',
-      secteur: 'Industrie Aéronautique & Spatial',
-      niveau: 'T',
-      dureeEntreprise: '800h (50% MH)',
-      inscritsFpa: 35,
-      placesEntreprise: 35,
-      visitesRealisees: 35,
-      tauxInsertionPrevu: '94%',
-      entreprisesPartenaires: 14
-    },
-    {
-      filiere: 'Fabrication Mécanique & Usinage CNC',
-      secteur: 'Industrie Métallurgique & Automobile',
-      niveau: 'TS',
-      dureeEntreprise: '1120h (5 semestres)',
-      inscritsFpa: 24,
-      placesEntreprise: 24,
-      visitesRealisees: 22,
-      tauxInsertionPrevu: '91%',
-      entreprisesPartenaires: 9
-    }
-  ];
+  // Données réelles depuis Supabase (vide au démarrage)
+  const ministryData: { filiere: string; secteur: string; niveau: string; dureeEntreprise: string; inscritsFpa: number; placesEntreprise: number; visitesRealisees: number; tauxInsertionPrevu: string; entreprisesPartenaires: number; }[] = [];
 
   const totalInscrits = ministryData.reduce((acc, curr) => acc + curr.inscritsFpa, 0);
   const totalVisites = ministryData.reduce((acc, curr) => acc + curr.visitesRealisees, 0);

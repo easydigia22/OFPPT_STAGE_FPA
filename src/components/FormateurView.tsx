@@ -71,7 +71,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   const [selectedM01File, setSelectedM01File] = useState<string>('');
 
   // Formateur's trainees
-  const formateurStages = stages.filter(s => s.formateurId === currentUser.id || s.formateurName.includes('EL ALAMI'));
+  const formateurStages = stages.filter(s => s.formateurId === currentUser.id);
   
   const filteredStages = formateurStages.filter(s => {
     const matchGroupe = selectedGroupe === 'all' || s.groupe === selectedGroupe;

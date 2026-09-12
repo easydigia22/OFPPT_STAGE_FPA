@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { X, Printer, ShieldCheck } from 'lucide-react';
 import { AuditRecord } from '../../types';
 
@@ -14,7 +14,7 @@ export const PrintM02Modal: React.FC<PrintM02ModalProps> = ({
   isOpen,
   onClose,
   audits,
-  efp = 'ISFO Casablanca (Sidi Maârouf)',
+  efp = '',
   directionRegionale = 'DR Casablanca-Settat',
 }) => {
   if (!isOpen) return null;
@@ -168,3 +168,4 @@ export const PrintM02Modal: React.FC<PrintM02ModalProps> = ({
     </div>
   );
 };
+

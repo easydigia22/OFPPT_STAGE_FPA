@@ -63,49 +63,8 @@ export const ActeurDrView: React.FC<ActeurDrViewProps> = ({
   const totalVisites = visites.filter(v => v.dateEffectuee).length;
   const drAuditRate = totalVisites > 0 ? Math.round((drAudits.length / totalVisites) * 100) : 0;
 
-  // Group by EFP
-  const efpStats = [
-    {
-      nom: 'ISTA NTIC Sidi Maârouf Casablanca',
-      directeur: 'Driss TAZI',
-      stagiairesFpa: 46,
-      visitesRealisees: 42,
-      auditsEfp: 18,
-      auditsDr: 10,
-      montantIndemnites: '33 600,00 DH',
-      statut: 'Conforme'
-    },
-    {
-      nom: 'ISFO Casablanca (Froid & Génie Climatique)',
-      directeur: 'Karim NAJI',
-      stagiairesFpa: 32,
-      visitesRealisees: 28,
-      auditsEfp: 12,
-      auditsDr: 8,
-      montantIndemnites: '22 400,00 DH',
-      statut: 'Conforme'
-    },
-    {
-      nom: 'CFMA Nouaceur (Métiers de l’Aéronautique)',
-      directeur: 'Meryem SEBTI',
-      stagiairesFpa: 35,
-      visitesRealisees: 35,
-      auditsEfp: 15,
-      auditsDr: 9,
-      montantIndemnites: '28 000,00 DH',
-      statut: 'Conforme'
-    },
-    {
-      nom: 'ISTA Génie Mécanique & Automobile Ain Sebaâ',
-      directeur: 'Tariq EL BOUZIDI',
-      stagiairesFpa: 28,
-      visitesRealisees: 25,
-      auditsEfp: 10,
-      auditsDr: 6,
-      montantIndemnites: '20 000,00 DH',
-      statut: 'Conforme'
-    }
-  ];
+  // Group by EFP — données réelles depuis Supabase (vide au démarrage)
+  const efpStats: { nom: string; directeur: string; stagiairesFpa: number; visitesRealisees: number; auditsEfp: number; auditsDr: number; montantIndemnites: string; statut: string; }[] = [];
 
   const totalRegionalStagiaires = efpStats.reduce((acc, curr) => acc + curr.stagiairesFpa, 0);
   const totalRegionalVisites = efpStats.reduce((acc, curr) => acc + curr.visitesRealisees, 0);
