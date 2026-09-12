@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserRole, UserProfile } from '../types';
-import { Shield, KeyRound, User, CheckCircle2, ArrowRight, X, Loader2, LogIn } from 'lucide-react';
+import { Shield, KeyRound, User, CheckCircle2, ArrowRight, X, Loader2, LogIn, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { db } from '../lib/db';
 
@@ -26,6 +26,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [error, setError] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
+  // Registration mode (when user not found)
+  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [regNom, setRegNom] = useState('');
+  const [regRole, setRegRole] = useState<UserRole>('efp');
+  const [regEfp, setRegEfp] = useState('');
+  const [regDr, setRegDr] = useState('DR Casablanca-Settat');
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [regError, setRegError] = useState('');
+
   if (!isOpen) return null;
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -34,39 +43,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setIsLoggingIn(true);
 
     try {
-      // Try Supabase Auth
+      // Try Supabase Auth first
       const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (authError) {
-        // Fallback: find user in profiles table by email (demo mode without auth accounts)
-        const profile = await db.profiles.getByEmail(email);
-        if (profile) {
-          onSelectUser(profile);
-          onClose();
-        } else {
-          // Last fallback: local users list
-          const local = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-          if (local) {
-            onSelectUser(local);
-            onClose();
-          } else {
-            setError('Identifiants non reconnus. Vérifiez votre email ou utilisez un profil rapide ci-dessous.');
-          }
-        }
-      } else if (data.user) {
+      if (!authError && data.user) {
         // Auth success — load profile from DB
         const profile = await db.profiles.getByEmail(data.user.email!);
         if (profile) {
           onSelectUser(profile);
           onClose();
-        } else {
-          setError('Profil utilisateur introuvable. Contactez l\'administrateur.');
+          return;
         }
       }
+
+      // Fallback: find profile by email (no password check — demo/internal mode)
+      const profile = await db.profiles.getByEmail(email);
+      if (profile) {
+        onSelectUser(profile);
+        onClose();
+        return;
+      }
+
+      // Not found — offer registration
+      setError('');
+      setMode('register');
     } catch {
       setError('Erreur de connexion. Vérifiez votre connexion internet.');
     } finally {
       setIsLoggingIn(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regNom.trim() || !email.trim()) { setRegError('Nom et email obligatoires.'); return; }
+    setRegError('');
+    setIsRegistering(true);
+
+    try {
+      const newProfile: UserProfile = {
+        id: `user-${Date.now()}`,
+        name: regNom.trim(),
+        email: email.trim().toLowerCase(),
+        role: regRole,
+        efp: (regRole === 'efp' || regRole === 'formateur') ? regEfp.trim() : '',
+        directionRegionale: regDr,
+        telephone: '',
+        cni: '',
+      };
+      await db.profiles.upsert(newProfile);
+      onSelectUser(newProfile);
+      onClose();
+    } catch (err) {
+      setRegError('Erreur lors de la création du compte. Réessayez.');
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -105,83 +136,164 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
         </div>
 
-        {/* Quick Persona Switcher */}
-        <div className="mb-6">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-2.5">
-            Sélection rapide d'un profil (4 Rôles du Cahier des Charges)
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {users.map((u) => {
-              const badge = getRoleBadge(u.role);
-              const isActive = currentUser.id === u.id;
-              return (
-                <button key={u.id} onClick={() => selectPersona(u)}
-                  className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
-                    isActive
-                      ? 'border-blue-600 bg-blue-50/50 shadow-xs ring-2 ring-blue-500/20'
-                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                  }`}>
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.color}`}>
-                      {badge.label}
-                    </span>
-                    {isActive && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-sm text-slate-900">{u.name}</h4>
-                    <p className="text-xs text-slate-500 truncate">{u.email}</p>
-                    <p className="text-[11px] text-slate-400 mt-1">{u.efp}</p>
-                  </div>
-                </button>
-              );
-            })}
+        {/* Quick Persona Switcher — only shown when accounts exist */}
+        {users.length > 0 && (
+          <div className="mb-6">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-600 block mb-2.5">
+              Sélection rapide d'un profil
+            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {users.map((u) => {
+                const badge = getRoleBadge(u.role);
+                const isActive = currentUser?.id === u.id;
+                return (
+                  <button key={u.id} onClick={() => selectPersona(u)}
+                    className={`p-3 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                      isActive
+                        ? 'border-blue-600 bg-blue-50/50 shadow-xs ring-2 ring-blue-500/20'
+                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}>
+                    <div className="flex items-start justify-between gap-2 mb-1.5">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badge.color}`}>
+                        {badge.label}
+                      </span>
+                      {isActive && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-900">{u.name}</h4>
+                      <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                      <p className="text-[11px] text-slate-400 mt-1">{u.efp}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Real Login Form */}
-        <div className="border-t border-slate-100 pt-5">
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-2">
-            <LogIn className="w-3.5 h-3.5" />
-            Connexion avec identifiants OFPPT
-          </p>
-          <form onSubmit={handleLogin} className="space-y-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Adresse e-mail</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ex: m.elalami@ofppt.ma"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
+        {/* Login Form */}
+        {mode === 'login' && (
+          <div className={users.length > 0 ? 'border-t border-slate-100 pt-5' : ''}>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-2">
+              <LogIn className="w-3.5 h-3.5" />
+              Connexion avec identifiants OFPPT
+            </p>
+            <form onSubmit={handleLogin} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Adresse e-mail</label>
+                <div className="relative">
+                  <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+                    placeholder="ex: k.hamdii@ofppt.ma"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Mot de passe</label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              {error && (
+                <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2 rounded border border-rose-200">{error}</p>
+              )}
+              <button type="submit" disabled={isLoggingIn}
+                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer">
+                {isLoggingIn
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Connexion…</span></>
+                  : <><span>Se connecter</span><ArrowRight className="w-4 h-4" /></>
+                }
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Registration Form — shown when email not found */}
+        {mode === 'register' && (
+          <div className={users.length > 0 ? 'border-t border-slate-100 pt-5' : ''}>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <UserPlus className="w-4 h-4 text-emerald-700" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900">Créer mon compte</p>
+                <p className="text-xs text-slate-500">Email non trouvé — complétez votre profil pour accéder au système.</p>
               </div>
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Mot de passe</label>
-              <div className="relative">
-                <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                <input
-                  type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
+            <form onSubmit={handleRegister} className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Email (non modifiable)</label>
+                <input type="email" value={email} readOnly
+                  className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-slate-50 text-slate-500" />
               </div>
-            </div>
-            {error && (
-              <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2 rounded border border-rose-200">{error}</p>
-            )}
-            <button type="submit" disabled={isLoggingIn}
-              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-xs cursor-pointer">
-              {isLoggingIn
-                ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Connexion…</span></>
-                : <><span>Se connecter</span><ArrowRight className="w-4 h-4" /></>
-              }
-            </button>
-          </form>
-          <p className="text-[11px] text-slate-400 mt-3 text-center">
-            Mot de passe démo : <span className="font-mono font-bold text-slate-600">ofppt2026</span>
-          </p>
-        </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Nom complet <span className="text-rose-500">*</span></label>
+                <input type="text" value={regNom} onChange={(e) => setRegNom(e.target.value)} required
+                  placeholder="ex: Kaoutar HAMDII"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Rôle <span className="text-rose-500">*</span></label>
+                <select value={regRole} onChange={(e) => setRegRole(e.target.value as UserRole)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                  <option value="efp">Direction EFP</option>
+                  <option value="formateur">Formateur Conseiller FPA</option>
+                  <option value="dr">Direction Régionale (DR)</option>
+                  <option value="stagiaire">Stagiaire FPA</option>
+                </select>
+              </div>
+              {(regRole === 'efp' || regRole === 'formateur') && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Établissement (EFP)</label>
+                  <input type="text" value={regEfp} onChange={(e) => setRegEfp(e.target.value)}
+                    placeholder="ex: ISTA NTIC Sidi Maârouf Casablanca"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Direction Régionale</label>
+                <select value={regDr} onChange={(e) => setRegDr(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                  <option>DR Casablanca-Settat</option>
+                  <option>DR Rabat-Salé-Kénitra</option>
+                  <option>DR Marrakech-Safi</option>
+                  <option>DR Tanger-Tétouan-Al Hoceïma</option>
+                  <option>DR Fès-Meknès</option>
+                  <option>DR Souss-Massa</option>
+                  <option>DR Oriental</option>
+                  <option>DR Béni Mellal-Khénifra</option>
+                  <option>DR Laâyoune-Sakia El Hamra</option>
+                  <option>DR Dakhla-Oued Ed-Dahab</option>
+                  <option>DR Drâa-Tafilalet</option>
+                  <option>DR Guelmim-Oued Noun</option>
+                </select>
+              </div>
+              {regError && (
+                <p className="text-xs text-rose-600 font-medium bg-rose-50 p-2 rounded border border-rose-200">{regError}</p>
+              )}
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setMode('login')}
+                  className="flex-1 py-2 px-4 border border-slate-300 text-slate-700 font-medium rounded-xl text-sm hover:bg-slate-50 transition-colors">
+                  Retour
+                </button>
+                <button type="submit" disabled={isRegistering}
+                  className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-medium rounded-xl text-sm transition-colors flex items-center justify-center gap-2">
+                  {isRegistering
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Création…</span></>
+                    : <><UserPlus className="w-4 h-4" /><span>Créer et accéder</span></>
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   );
