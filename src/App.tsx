@@ -357,8 +357,6 @@ export default function App() {
     }
   };
 
-  const activeBadge = getActiveRoleBadge(currentUser!.role);
-
   // ─── Loading screen ─────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -404,6 +402,9 @@ export default function App() {
       </div>
     );
   }
+
+  // currentUser is guaranteed non-null beyond this point
+  const activeBadge = getActiveRoleBadge(currentUser.role);
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-800 antialiased selection:bg-blue-600 selection:text-white">
