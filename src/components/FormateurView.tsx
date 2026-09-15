@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Stage, Visite, UserProfile, RegulatoryDoc, FicheM01Uploaded } from '../types';
+import { ImportStagiairesModal } from './ImportStagiairesModal';
+import { db } from '../lib/db';
 import {
   Users,
   Building2,
@@ -52,6 +54,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   onDeleteStage,
 }) => {
   const [activeTab, setActiveTab] = useState<'stagiaires' | 'visites' | 'imprimes' | 'reglementation'>('stagiaires');
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [deleteVisiteId, setDeleteVisiteId] = useState<string | null>(null);
   const [deleteStageId, setDeleteStageId] = useState<string | null>(null);
   const [selectedGroupe, setSelectedGroupe] = useState<string>('all');
@@ -194,6 +197,13 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
             >
               <MessageSquare className="w-4 h-4" />
               <span>Messagerie EFP / Stagiaires</span>
+            </button>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Importer stagiaires Excel</span>
             </button>
           </div>
         </div>
@@ -816,6 +826,15 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
         </div>
       )}
 
+      <ImportStagiairesModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        efp={currentUser.efp}
+        directionRegionale={currentUser.directionRegionale}
+        onImport={async (stagiaires) => {
+          await db.profiles.bulkUpsert(stagiaires);
+        }}
+      />
     </div>
   );
 };
