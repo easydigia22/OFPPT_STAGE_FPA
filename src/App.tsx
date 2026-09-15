@@ -347,6 +347,16 @@ export default function App() {
     db.profiles.update(upd.id, upd).catch(console.error);
   };
 
+  const handleDeleteUser = (id: string) => {
+    setUsers(users.filter(u => u.id !== id));
+    db.profiles.delete(id).catch(console.error);
+  };
+
+  const handleEfpUpdateUser = (upd: UserProfile) => {
+    setUsers(users.map(u => u.id === upd.id ? upd : u));
+    db.profiles.upsert(upd).catch(console.error);
+  };
+
   const getActiveRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'stagiaire': return { label: 'Stagiaire FPA', color: 'bg-emerald-500' };
@@ -601,12 +611,16 @@ export default function App() {
         {currentUser.role === 'efp' && (
           <ActeurEfpView
             currentUser={currentUser}
+            users={users}
             stages={stages}
             visites={visites}
             audits={audits}
             docs={regulatoryDocs}
             affectations={affectations}
             plannings={plannings}
+            onCreateUser={handleCreateStagiaire}
+            onUpdateUser={handleEfpUpdateUser}
+            onDeleteUser={handleDeleteUser}
             onAddAudit={handleAddAudit}
             onAddAffectation={handleAddAffectation}
             onEditAffectation={handleEditAffectation}

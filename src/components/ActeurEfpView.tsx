@@ -39,12 +39,16 @@ import {
 
 interface ActeurEfpViewProps {
   currentUser: UserProfile;
+  users: UserProfile[];
   stages: Stage[];
   visites: Visite[];
   audits: AuditRecord[];
   docs: RegulatoryDoc[];
   affectations: AffectationFPA[];
   plannings: PlanningAnnuel[];
+  onCreateUser: (u: UserProfile) => void;
+  onUpdateUser: (u: UserProfile) => void;
+  onDeleteUser: (id: string) => void;
   onAddAudit: (audit: Omit<AuditRecord, 'id' | 'typeAudit' | 'dateAudit' | 'auditeurId' | 'auditeurNom'>) => void;
   onAddAffectation: (aff: Omit<AffectationFPA, 'id' | 'dateAffectation'>) => void;
   onEditAffectation: (aff: AffectationFPA) => void;
@@ -63,7 +67,7 @@ interface ActeurEfpViewProps {
   onOpenCreateStagiaire?: () => void;
 }
 
-type TabId = 'affectations' | 'planning' | 'documents' | 'suivi' | 'audit' | 'reglementation';
+type TabId = 'affectations' | 'planning' | 'documents' | 'suivi' | 'audit' | 'reglementation' | 'comptes';
 
 interface UploadedDoc {
   type: 'contrat' | 'demande' | 'assurance' | 'decoupe';
@@ -74,12 +78,16 @@ interface UploadedDoc {
 
 export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   currentUser,
+  users,
   stages,
   visites,
   audits,
   docs,
   affectations,
   plannings,
+  onCreateUser,
+  onUpdateUser,
+  onDeleteUser,
   onAddAudit,
   onAddAffectation,
   onEditAffectation,
@@ -99,6 +107,76 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>('affectations');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Gestion comptes
+  const [compteModalOpen, setCompteModalOpen] = useState(false);
+  const [compteEditing, setCompteEditing] = useState<UserProfile | null>(null);
+  const [compteDeleteId, setCompteDeleteId] = useState<string | null>(null);
+  const [compteNom, setCompteNom] = useState('');
+  const [compteEmail, setCompteEmail] = useState('');
+  const [compteRole, setCompteRole] = useState<'formateur' | 'stagiaire'>('stagiaire');
+  const [compteFiliere, setCompteFiliere] = useState('');
+  const [compteGroupe, setCompteGroupe] = useState('');
+  const [compteMatricule, setCompteMatricule] = useState('');
+  const [compteTel, setCompteTel] = useState('');
+  const [compteSaving, setCompteSaving] = useState(false);
+
+  const efpUsers = users.filter(u =>
+    u.efp === currentUser.efp && u.id !== currentUser.id && (u.role === 'formateur' || u.role === 'stagiaire')
+  );
+
+  const openCreateCompte = () => {
+    setCompteEditing(null);
+    setCompteNom(''); setCompteEmail(''); setCompteRole('stagiaire');
+    setCompteFiliere(''); setCompteGroupe(''); setCompteMatricule(''); setCompteTel('');
+    setCompteModalOpen(true);
+  };
+
+  const openEditCompte = (u: UserProfile) => {
+    setCompteEditing(u);
+    setCompteNom(u.name); setCompteEmail(u.email); setCompteRole(u.role as 'formateur' | 'stagiaire');
+    setCompteFiliere(u.filiere || ''); setCompteGroupe(u.groupe || '');
+    setCompteMatricule(u.matricule || ''); setCompteTel(u.telephone || '');
+    setCompteModalOpen(true);
+  };
+
+  const handleSaveCompte = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!compteNom.trim() || !compteEmail.trim()) return;
+    setCompteSaving(true);
+    try {
+      if (compteEditing) {
+        const upd: UserProfile = {
+          ...compteEditing,
+          name: compteNom.trim(),
+          email: compteEmail.trim().toLowerCase(),
+          role: compteRole,
+          filiere: compteFiliere.trim() || undefined,
+          groupe: compteGroupe.trim() || undefined,
+          matricule: compteMatricule.trim() || undefined,
+          telephone: compteTel.trim(),
+        };
+        onUpdateUser(upd);
+      } else {
+        const newU: UserProfile = {
+          id: `usr-${Date.now()}`,
+          name: compteNom.trim(),
+          email: compteEmail.trim().toLowerCase(),
+          role: compteRole,
+          efp: currentUser.efp,
+          directionRegionale: currentUser.directionRegionale,
+          cni: '', telephone: compteTel.trim(),
+          filiere: compteFiliere.trim() || undefined,
+          groupe: compteGroupe.trim() || undefined,
+          matricule: compteMatricule.trim() || undefined,
+        };
+        onCreateUser(newU);
+      }
+      setCompteModalOpen(false);
+    } finally {
+      setCompteSaving(false);
+    }
+  };
 
   // Audit modal
   const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
@@ -312,6 +390,7 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
   };
 
   const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
+    { id: 'comptes', label: 'Gestion comptes', icon: <UserCog className="w-4 h-4" /> },
     { id: 'affectations', label: 'Affectations & Découpages', icon: <Users className="w-4 h-4" /> },
     { id: 'planning', label: 'Planning Annuel', icon: <Calendar className="w-4 h-4" /> },
     { id: 'documents', label: 'Documents FPA', icon: <FilePlus className="w-4 h-4" /> },
@@ -452,6 +531,182 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
           </button>
         ))}
       </div>
+
+      {/* ─── TAB 0 : GESTION DES COMPTES ─── */}
+      {activeTab === 'comptes' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-black text-slate-900">Comptes utilisateurs — {currentUser.efp}</h2>
+              <p className="text-xs text-slate-500 mt-0.5">{efpUsers.length} compte(s) : formateurs et stagiaires de cet établissement</p>
+            </div>
+            <button onClick={openCreateCompte}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm">
+              <UserPlus className="w-4 h-4" />
+              Nouveau compte
+            </button>
+          </div>
+
+          {/* Tableau des comptes */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            {efpUsers.length === 0 ? (
+              <div className="text-center py-16 text-slate-400">
+                <UserCog className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm font-medium">Aucun compte créé pour cet EFP.</p>
+                <p className="text-xs mt-1">Cliquez sur « Nouveau compte » ou importez depuis Excel.</p>
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Nom</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Email</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider">Rôle</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider hidden sm:table-cell">Filière / Groupe</th>
+                    <th className="text-left px-4 py-3 text-xs font-bold text-slate-600 uppercase tracking-wider hidden md:table-cell">Statut MDP</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {efpUsers.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-slate-900">{u.name}</td>
+                      <td className="px-4 py-3 text-slate-600 text-xs">{u.email}</td>
+                      <td className="px-4 py-3">
+                        {u.role === 'formateur'
+                          ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">Formateur</span>
+                          : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Stagiaire</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500 hidden sm:table-cell">
+                        {u.filiere && <span>{u.filiere}</span>}
+                        {u.groupe && <span className="ml-1 font-mono bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">{u.groupe}</span>}
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        {u.tempPassword && u.passwordChanged === false
+                          ? <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Provisoire</span>
+                          : <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">Défini</span>
+                        }
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 justify-end">
+                          <button onClick={() => openEditCompte(u)}
+                            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Modifier">
+                            <Pencil className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setCompteDeleteId(u.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Supprimer">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Modal Créer / Modifier compte */}
+          {compteModalOpen && (
+            <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-black text-slate-900">
+                    {compteEditing ? 'Modifier le compte' : 'Nouveau compte'}
+                  </h3>
+                  <button onClick={() => setCompteModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                <form onSubmit={handleSaveCompte} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Nom complet <span className="text-rose-500">*</span></label>
+                    <input type="text" value={compteNom} onChange={e => setCompteNom(e.target.value)} required
+                      placeholder="Prénom NOM"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Email <span className="text-rose-500">*</span></label>
+                    <input type="email" value={compteEmail} onChange={e => setCompteEmail(e.target.value)} required
+                      placeholder="prenom.nom@ofppt.ma"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Rôle <span className="text-rose-500">*</span></label>
+                    <select value={compteRole} onChange={e => setCompteRole(e.target.value as 'formateur' | 'stagiaire')}
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                      <option value="stagiaire">Stagiaire FPA</option>
+                      <option value="formateur">Formateur Conseiller FPA</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Filière</label>
+                      <input type="text" value={compteFiliere} onChange={e => setCompteFiliere(e.target.value)}
+                        placeholder="ex: Développement Digital"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Groupe</label>
+                      <input type="text" value={compteGroupe} onChange={e => setCompteGroupe(e.target.value)}
+                        placeholder="ex: DEV201"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                  </div>
+                  {compteRole === 'formateur' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Matricule OFPPT</label>
+                      <input type="text" value={compteMatricule} onChange={e => setCompteMatricule(e.target.value)}
+                        placeholder="ex: MAT-12345"
+                        className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Téléphone</label>
+                    <input type="tel" value={compteTel} onChange={e => setCompteTel(e.target.value)}
+                      placeholder="06XXXXXXXX"
+                      className="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button type="button" onClick={() => setCompteModalOpen(false)}
+                      className="flex-1 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
+                      Annuler
+                    </button>
+                    <button type="submit" disabled={compteSaving}
+                      className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl text-sm font-semibold transition-colors">
+                      {compteSaving ? 'Enregistrement…' : compteEditing ? 'Mettre à jour' : 'Créer le compte'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Confirmation suppression */}
+          {compteDeleteId && (
+            <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 text-center">
+                <div className="w-12 h-12 rounded-full bg-rose-100 flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-6 h-6 text-rose-600" />
+                </div>
+                <h3 className="font-black text-slate-900 mb-2">Supprimer ce compte ?</h3>
+                <p className="text-sm text-slate-500 mb-5">Cette action est irréversible. Le compte sera définitivement supprimé.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => setCompteDeleteId(null)}
+                    className="flex-1 py-2.5 border border-slate-300 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
+                    Annuler
+                  </button>
+                  <button onClick={() => { onDeleteUser(compteDeleteId); setCompteDeleteId(null); }}
+                    className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-sm font-semibold transition-colors">
+                    Supprimer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ─── TAB 1 : AFFECTATIONS & DÉCOUPAGES ─── */}
       {activeTab === 'affectations' && (
