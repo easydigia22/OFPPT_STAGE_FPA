@@ -151,6 +151,7 @@ export function docFromDB(r: any): RegulatoryDoc {
     id: r.id, titre: r.titre, reference: r.reference, description: r.description || '',
     categorie: r.categorie, datePublication: r.date_publication, fichierNom: r.fichier_nom,
     tailleMo: r.taille_mo || '', estTelechargeable: r.est_telechargeable, cible: r.cible,
+    fileUrls: r.file_urls ?? undefined,
   };
 }
 export function docToDB(d: RegulatoryDoc) {

@@ -76,13 +76,15 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   // Formateur's trainees
   const formateurStages = stages.filter(s => s.formateurId === currentUser.id);
   
-  const filteredStages = formateurStages.filter(s => {
-    const matchGroupe = selectedGroupe === 'all' || s.groupe === selectedGroupe;
-    const matchSearch = s.stagiaireName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.entreprise.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        s.stagiaireCni.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchGroupe && matchSearch;
-  });
+  const filteredStages = formateurStages
+    .filter(s => {
+      const matchGroupe = selectedGroupe === 'all' || s.groupe === selectedGroupe;
+      const matchSearch = s.stagiaireName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          s.entreprise.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          s.stagiaireCni.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchGroupe && matchSearch;
+    })
+    .sort((a, b) => (a.statut === 'depose' ? -1 : b.statut === 'depose' ? 1 : 0));
 
   const formateurVisites = visites.filter(v => v.formateurId === currentUser.id || v.formateurMatricule === currentUser.matricule);
 
@@ -153,6 +155,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   const totalStagiaires = formateurStages.length;
   const totalVisitesEffectuees = formateurVisites.filter(v => v.dateEffectuee).length;
   const totalEntreprises = new Set(formateurStages.map(s => s.entreprise.nom)).size;
+  const stagesToValidate = formateurStages.filter(s => s.statut === 'depose');
 
   return (
     <div className="space-y-6">
@@ -224,6 +227,35 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
         </div>
       </div>
 
+      {/* Bannière : contrats en attente de validation */}
+      {stagesToValidate.length > 0 && (
+        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 flex flex-col sm:flex-row sm:items-start gap-3">
+          <div className="flex items-center gap-2 shrink-0">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span className="text-sm font-bold text-amber-800">
+              {stagesToValidate.length} contrat{stagesToValidate.length > 1 ? 's' : ''} déposé{stagesToValidate.length > 1 ? 's' : ''} — validation requise
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 flex-1">
+            {stagesToValidate.map(s => (
+              <div key={s.id} className="flex items-center gap-2 bg-white border border-amber-200 rounded-lg px-3 py-1.5 text-xs">
+                <span className="font-bold text-slate-800">{s.stagiaireName}</span>
+                <span className="text-slate-500">·</span>
+                <span className="text-slate-600">{s.entreprise.nom}</span>
+                <span className="text-slate-500">·</span>
+                <span className="text-slate-500">{s.groupe}</span>
+                <button
+                  onClick={() => { onValidateStage(s.id); setActiveTab('stagiaires'); }}
+                  className="ml-1 px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold transition-colors cursor-pointer"
+                >
+                  Valider
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 text-xs">
         <button
@@ -236,6 +268,11 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
         >
           <Users className="w-4 h-4" />
           <span>Filières & Stagiaires en charge ({formateurStages.length})</span>
+          {stagesToValidate.length > 0 && (
+            <span className="bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
+              {stagesToValidate.length}
+            </span>
+          )}
         </button>
 
         <button
@@ -329,10 +366,15 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
                     const v2 = formateurVisites.find(v => v.stageId === stage.id && v.numeroVisite === 2);
 
                     return (
-                      <tr key={stage.id} className="hover:bg-slate-50/70 transition-colors">
+                      <tr key={stage.id} className={`transition-colors ${stage.statut === 'depose' ? 'bg-amber-50/60 hover:bg-amber-50' : 'hover:bg-slate-50/70'}`}>
                         <td className="p-3">
                           <div className="font-bold text-slate-900 uppercase">{stage.stagiaireName}</div>
                           <div className="text-[10px] text-slate-500 font-mono">CNI: {stage.stagiaireCni}</div>
+                          {stage.statut === 'depose' && (
+                            <span className="inline-flex items-center gap-1 mt-1 text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded-full">
+                              <AlertTriangle className="w-2.5 h-2.5" /> Contrat déposé — à valider
+                            </span>
+                          )}
                         </td>
 
                         <td className="p-3">
@@ -665,15 +707,25 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
                   <span className="text-[10px] font-mono text-slate-400">{doc.reference}</span>
                   <button
                     onClick={() => {
-                      const element = document.createElement('a');
-                      const file = new Blob([`Document Réglementaire OFPPT FPA:\n${doc.titre}\nRéférence: ${doc.reference}`], {type: 'text/plain'});
-                      element.href = URL.createObjectURL(file);
-                      element.download = doc.fichierNom;
-                      document.body.appendChild(element);
-                      element.click();
-                      document.body.removeChild(element);
+                      if (doc.fileUrls && doc.fileUrls.length > 0) {
+                        doc.fileUrls.forEach((url, i) => {
+                          setTimeout(() => {
+                            const ext = url.split('.').pop() ?? 'pdf';
+                            const base = doc.fichierNom.replace(/\.[^.]+$/, '');
+                            const name = doc.fileUrls!.length > 1 ? `${base}_page${i + 1}.${ext}` : doc.fichierNom;
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = name;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                          }, i * 300);
+                        });
+                      }
                     }}
-                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                    disabled={!doc.fileUrls?.length}
+                    title={!doc.fileUrls?.length ? 'Document non encore disponible' : undefined}
+                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-blue-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span>Télécharger</span>

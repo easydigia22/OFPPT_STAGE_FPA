@@ -1240,15 +1240,25 @@ export const ActeurEfpView: React.FC<ActeurEfpViewProps> = ({
                 <span className="text-[10px] font-mono text-slate-400">{doc.reference}</span>
                 <button
                   onClick={() => {
-                    const el = document.createElement('a');
-                    const file = new Blob([`Document Officiel OFPPT FPA:\n${doc.titre}\nRéférence: ${doc.reference}`], { type: 'text/plain' });
-                    el.href = URL.createObjectURL(file);
-                    el.download = doc.fichierNom;
-                    document.body.appendChild(el);
-                    el.click();
-                    document.body.removeChild(el);
+                    if (doc.fileUrls && doc.fileUrls.length > 0) {
+                      doc.fileUrls.forEach((url, i) => {
+                        setTimeout(() => {
+                          const ext = url.split('.').pop() ?? 'pdf';
+                          const base = doc.fichierNom.replace(/\.[^.]+$/, '');
+                          const name = doc.fileUrls!.length > 1 ? `${base}_page${i + 1}.${ext}` : doc.fichierNom;
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = name;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }, i * 300);
+                      });
+                    }
                   }}
-                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                  disabled={!doc.fileUrls?.length}
+                  title={!doc.fileUrls?.length ? 'Document non encore disponible' : undefined}
+                  className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 disabled:opacity-40 disabled:cursor-not-allowed text-amber-800 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
                   <Download className="w-3.5 h-3.5" />
                   Télécharger
                 </button>

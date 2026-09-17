@@ -26,6 +26,7 @@ import {
 
 interface StagiaireViewProps {
   currentUser: UserProfile;
+  users: UserProfile[];
   stages: Stage[];
   visites: Visite[];
   docs: RegulatoryDoc[];
@@ -40,6 +41,7 @@ interface StagiaireViewProps {
 
 export const StagiaireView: React.FC<StagiaireViewProps> = ({
   currentUser,
+  users,
   stages,
   visites,
   docs,
@@ -70,6 +72,7 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
   const [dureeHeures, setDureeHeures] = useState<number>(800);
   const [missions, setMissions] = useState('');
   const [formFeedback, setFormFeedback] = useState('');
+  const [formateurSelectionneId, setFormateurSelectionneId] = useState('');
 
   // Filter stages of this trainee
   const myStages = stages.filter(s => s.stagiaireId === currentUser.id);
@@ -103,8 +106,8 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
         telephone: tuteurTel,
         email: tuteurEmail,
       },
-      formateurId: '',
-      formateurName: '',
+      formateurId: formateurSelectionneId,
+      formateurName: users.find(u => u.id === formateurSelectionneId)?.name || '',
       efp: currentUser.efp,
       directionRegionale: currentUser.directionRegionale,
       dateDebut,
@@ -420,6 +423,26 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
                     </div>
                   </div>
 
+                  {/* Message étape suivante après dépôt */}
+                  {stage.statut === 'depose' && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-xs">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-amber-800">Contrat déposé — en attente de validation par votre formateur encadrant</p>
+                        <p className="text-amber-700 mt-0.5">Votre formateur a été notifié. Dès qu'il valide votre contrat, votre stage passera au statut <strong>Validé</strong> et les visites en entreprise pourront être planifiées.</p>
+                      </div>
+                    </div>
+                  )}
+                  {stage.statut === 'valide_formateur' && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-start gap-2.5 text-xs">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-emerald-800">Contrat validé par votre formateur encadrant ✓</p>
+                        <p className="text-emerald-700 mt-0.5">Votre stage est officiellement en cours. Votre formateur effectuera 2 visites en entreprise selon le planning FPA.</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Document Televersement Section: Contrat de stage cacheté et signé */}
                   <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100 space-y-2">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -535,18 +558,13 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Ville d'accueil *</label>
-                <select
+                <input
+                  type="text"
+                  placeholder="ex: Casablanca, Mohammedia, Rabat…"
                   value={ville}
                   onChange={(e) => setVille(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white focus:outline-hidden focus:border-blue-500"
-                >
-                  <option value="Casablanca">Casablanca</option>
-                  <option value="Nouaceur">Nouaceur</option>
-                  <option value="Mohammedia">Mohammedia</option>
-                  <option value="Rabat">Rabat</option>
-                  <option value="Kénitra">Kénitra</option>
-                  <option value="Tanger">Tanger</option>
-                </select>
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-hidden focus:border-blue-500"
+                />
               </div>
             </div>
 
@@ -636,6 +654,27 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Formateur encadrant */}
+            <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+              <label className="block text-xs font-bold text-blue-800 mb-1 uppercase tracking-wider">
+                Formateur encadrant *
+              </label>
+              <p className="text-[11px] text-blue-600 mb-2">Sélectionnez le formateur conseiller FPA qui assure votre suivi en entreprise.</p>
+              <select
+                value={formateurSelectionneId}
+                onChange={(e) => setFormateurSelectionneId(e.target.value)}
+                required
+                className="w-full px-3 py-2 text-xs border border-blue-300 rounded-lg bg-white focus:outline-hidden focus:border-blue-500"
+              >
+                <option value="">-- Choisissez votre formateur --</option>
+                {users.filter(u => u.role === 'formateur').map(f => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}{f.efp ? ` — ${f.efp}` : ''}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Dates & missions */}
@@ -743,22 +782,30 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
                       <span className="text-[10px] font-mono text-slate-400 truncate">{doc.tailleMo}</span>
                       <button
                         onClick={() => {
-                          if (doc.id === 'doc-contrat-stage' && currentStage) {
+                          if (doc.fileUrls && doc.fileUrls.length > 0) {
+                            doc.fileUrls.forEach((url, i) => {
+                              setTimeout(() => {
+                                const ext = url.split('.').pop() ?? 'jpeg';
+                                const base = doc.fichierNom.replace(/\.[^.]+$/, '');
+                                const name = doc.fileUrls!.length > 1 ? `${base}_page${i + 1}.${ext}` : doc.fichierNom;
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = name;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              }, i * 300);
+                            });
+                          } else if (doc.id === 'doc-contrat-stage' && currentStage) {
                             onOpenContractPrint(currentStage);
-                          } else {
-                            const element = document.createElement('a');
-                            const file = new Blob([`Document officiel OFPPT: ${doc.titre}\nRéférence: ${doc.reference}\nAnnée de formation: 2025/2026\nDate: ${new Date().toLocaleDateString()}`], { type: 'text/plain' });
-                            element.href = URL.createObjectURL(file);
-                            element.download = doc.fichierNom;
-                            document.body.appendChild(element);
-                            element.click();
-                            document.body.removeChild(element);
                           }
                         }}
-                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                        disabled={!doc.fileUrls?.length && !(doc.id === 'doc-contrat-stage' && currentStage)}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                        title={!doc.fileUrls?.length && !(doc.id === 'doc-contrat-stage' && currentStage) ? 'Document non encore disponible' : undefined}
                       >
                         <Download className="w-3.5 h-3.5" />
-                        <span>Télécharger</span>
+                        <span>Télécharger{doc.fileUrls && doc.fileUrls.length > 1 ? ` (${doc.fileUrls.length} pages)` : ''}</span>
                       </button>
                     </div>
                   </div>
@@ -790,15 +837,25 @@ export const StagiaireView: React.FC<StagiaireViewProps> = ({
                         <span className="text-[10px] font-mono text-slate-400 truncate">{doc.reference}</span>
                         <button
                           onClick={() => {
-                            const element = document.createElement('a');
-                            const file = new Blob([`Document officiel OFPPT: ${doc.titre}\nRéférence: ${doc.reference}\nAnnée de formation: 2025/2026\nDate: ${new Date().toLocaleDateString()}`], { type: 'text/plain' });
-                            element.href = URL.createObjectURL(file);
-                            element.download = doc.fichierNom;
-                            document.body.appendChild(element);
-                            element.click();
-                            document.body.removeChild(element);
+                            if (doc.fileUrls && doc.fileUrls.length > 0) {
+                              doc.fileUrls.forEach((url, i) => {
+                                setTimeout(() => {
+                                  const ext = url.split('.').pop() ?? 'pdf';
+                                  const base = doc.fichierNom.replace(/\.[^.]+$/, '');
+                                  const name = doc.fileUrls!.length > 1 ? `${base}_page${i + 1}.${ext}` : doc.fichierNom;
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = name;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  document.body.removeChild(a);
+                                }, i * 300);
+                              });
+                            }
                           }}
-                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ml-2"
+                          disabled={!doc.fileUrls?.length}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ml-2"
+                          title={!doc.fileUrls?.length ? 'Document non encore disponible' : undefined}
                         >
                           <Download className="w-3.5 h-3.5" />
                           <span>Télécharger</span>

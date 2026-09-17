@@ -511,15 +511,25 @@ export const ActeurDrView: React.FC<ActeurDrViewProps> = ({
                 <span className="text-[10px] font-mono text-slate-400">{doc.reference}</span>
                 <button
                   onClick={() => {
-                    const element = document.createElement('a');
-                    const file = new Blob([`Document Officiel OFPPT FPA:\n${doc.titre}\nRéférence: ${doc.reference}`], {type: 'text/plain'});
-                    element.href = URL.createObjectURL(file);
-                    element.download = doc.fichierNom;
-                    document.body.appendChild(element);
-                    element.click();
-                    document.body.removeChild(element);
+                    if (doc.fileUrls && doc.fileUrls.length > 0) {
+                      doc.fileUrls.forEach((url, i) => {
+                        setTimeout(() => {
+                          const ext = url.split('.').pop() ?? 'pdf';
+                          const base = doc.fichierNom.replace(/\.[^.]+$/, '');
+                          const name = doc.fileUrls!.length > 1 ? `${base}_page${i + 1}.${ext}` : doc.fichierNom;
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = name;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                        }, i * 300);
+                      });
+                    }
                   }}
-                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                  disabled={!doc.fileUrls?.length}
+                  title={!doc.fileUrls?.length ? 'Document non encore disponible' : undefined}
+                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed text-blue-700 font-semibold text-xs rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Télécharger</span>

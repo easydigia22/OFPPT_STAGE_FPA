@@ -49,7 +49,8 @@ export const REGULATORY_DOCUMENTS: RegulatoryDoc[] = [
     fichierNom: 'Contrat_de_Stage_FPA_Officiel_OFPPT.pdf',
     tailleMo: '0.8 Mo',
     estTelechargeable: true,
-    cible: ['all', 'stagiaire', 'formateur', 'efp']
+    cible: ['all', 'stagiaire', 'formateur', 'efp'],
+    fileUrls: ['/docs/contrat%20stage%20page%201.jpeg', '/docs/contrat%20stage%20page%202.jpeg'],
   },
   {
     id: 'doc-demande-stage',
@@ -61,7 +62,7 @@ export const REGULATORY_DOCUMENTS: RegulatoryDoc[] = [
     fichierNom: 'Demande_Officielle_Stage_FPA.pdf',
     tailleMo: '0.4 Mo',
     estTelechargeable: true,
-    cible: ['all', 'stagiaire', 'efp']
+    cible: ['all', 'stagiaire', 'efp'],
   },
   {
     id: 'doc-assurance-stage',
@@ -73,7 +74,8 @@ export const REGULATORY_DOCUMENTS: RegulatoryDoc[] = [
     fichierNom: 'Attestation_Assurance_Stage_OFPPT.pdf',
     tailleMo: '0.6 Mo',
     estTelechargeable: true,
-    cible: ['all', 'stagiaire', 'efp']
+    cible: ['all', 'stagiaire', 'efp'],
+    fileUrls: ['/docs/attestation%20assurance%202025.pdf'],
   },
   {
     id: 'doc-decoupage-dd',

@@ -174,6 +174,7 @@ export interface RegulatoryDoc {
   tailleMo: string;
   estTelechargeable: boolean;
   cible: ('all' | 'formateur' | 'efp' | 'dr' | 'stagiaire')[];
+  fileUrls?: string[];
 }
 
 export interface AffectationFPA {

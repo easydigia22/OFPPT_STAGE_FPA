@@ -63,7 +63,10 @@ import {
   Layers,
   Sparkles,
   ArrowRightLeft,
-  Loader2
+  Loader2,
+  GraduationCap,
+  Users,
+  MapPin
 } from 'lucide-react';
 
 async function seedRegulatoryDocs() {
@@ -91,6 +94,7 @@ export default function App() {
 
   // Modal Visibility States
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [loginRole, setLoginRole] = useState<UserRole | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isCommunicationModalOpen, setIsCommunicationModalOpen] = useState(false);
@@ -142,7 +146,15 @@ export default function App() {
         setAffectations(dbAffectations);
         setPlannings(dbPlannings);
         setIndemnisations(dbIndemn);
-        // currentUser stays null — login required
+
+        // Restaurer la session depuis localStorage
+        try {
+          const savedId = localStorage.getItem('fpa_current_user_id');
+          if (savedId) {
+            const savedUser = dbProfiles.find(u => u.id === savedId);
+            if (savedUser) setCurrentUser(savedUser);
+          }
+        } catch {};
       } catch (err) {
         console.error('Erreur chargement Supabase:', err);
         setDbError('Connexion Supabase échouée. Vérifiez votre connexion.');
@@ -159,7 +171,15 @@ export default function App() {
     if (targetUser) setCurrentUser(targetUser);
   };
 
-  const handleLogout = () => setCurrentUser(null);
+  const handleSelectUser = (u: UserProfile) => {
+    setCurrentUser(u);
+    try { localStorage.setItem('fpa_current_user_id', u.id); } catch {};
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    try { localStorage.removeItem('fpa_current_user_id'); } catch {}
+  };
 
   // ─── Handlers (local state + Supabase persist) ──────────────────
 
@@ -381,33 +401,82 @@ export default function App() {
 
   // ─── Login screen (no user authenticated) ───────────────────────
   if (!currentUser) {
+    const roles: { role: UserRole; label: string; sub: string; icon: React.ReactNode; color: string; border: string; hover: string }[] = [
+      {
+        role: 'efp', label: 'Direction EFP', sub: 'Responsable établissement de formation',
+        icon: <Building2 className="w-7 h-7" />,
+        color: 'bg-amber-500', border: 'border-amber-200', hover: 'hover:border-amber-400 hover:shadow-amber-100',
+      },
+      {
+        role: 'formateur', label: 'Formateur Conseiller', sub: 'Suivi & visites des stagiaires FPA',
+        icon: <Users className="w-7 h-7" />,
+        color: 'bg-blue-600', border: 'border-blue-200', hover: 'hover:border-blue-400 hover:shadow-blue-100',
+      },
+      {
+        role: 'stagiaire', label: 'Stagiaire FPA', sub: 'Dépôt de contrat & suivi de stage',
+        icon: <GraduationCap className="w-7 h-7" />,
+        color: 'bg-emerald-600', border: 'border-emerald-200', hover: 'hover:border-emerald-400 hover:shadow-emerald-100',
+      },
+      {
+        role: 'dr', label: 'Direction Régionale', sub: 'Supervision & audit régional FPA',
+        icon: <MapPin className="w-7 h-7" />,
+        color: 'bg-purple-600', border: 'border-purple-200', hover: 'hover:border-purple-400 hover:shadow-purple-100',
+      },
+    ];
+
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-6 p-4">
-        <div className="flex flex-col items-center gap-3 mb-2">
-          <div className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-serif font-black text-xl shadow-xl shadow-blue-500/30 border border-blue-400/30">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col items-center justify-center gap-8 p-6">
+        {/* Logo + titre */}
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-20 h-20 rounded-3xl bg-blue-600 text-white flex items-center justify-center font-serif font-black text-2xl shadow-2xl shadow-blue-500/30 border border-blue-400/20">
             OFPPT
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-black text-white tracking-tight">FPA Pilot</h1>
-            <p className="text-xs text-slate-400 mt-1">Système de Gestion & d'Audit — Formation Professionnelle Alternée</p>
+            <h1 className="text-3xl font-black text-white tracking-tight">FPA Pilot</h1>
+            <p className="text-sm text-slate-400 mt-1">Système de Gestion & d'Audit — Formation Professionnelle Alternée</p>
           </div>
         </div>
+
         {dbError && (
           <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs text-center py-2 px-4 rounded-lg max-w-sm">
             ⚠️ {dbError}
           </div>
         )}
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 border border-slate-200">
-          <AuthModal
-            isOpen={true}
-            onClose={() => {}}
-            users={users}
-            currentUser={null as any}
-            onSelectUser={(u) => setCurrentUser(u)}
-            hideClose
-          />
+
+        {/* Instruction */}
+        <p className="text-slate-400 text-sm font-medium">Sélectionnez votre profil pour vous connecter</p>
+
+        {/* 4 cartes de rôles */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+          {roles.map(({ role, label, sub, icon, color, border, hover }) => (
+            <button
+              key={role}
+              onClick={() => setLoginRole(role)}
+              className={`group bg-white rounded-2xl border-2 ${border} ${hover} p-6 text-left transition-all duration-200 hover:shadow-xl flex flex-col gap-3 cursor-pointer`}
+            >
+              <div className={`w-12 h-12 rounded-xl ${color} text-white flex items-center justify-center shadow-md`}>
+                {icon}
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 text-base leading-tight">{label}</p>
+                <p className="text-xs text-slate-500 mt-1 leading-snug">{sub}</p>
+              </div>
+              <div className="flex items-center gap-1.5 mt-auto">
+                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full text-white ${color}`}>Se connecter →</span>
+              </div>
+            </button>
+          ))}
         </div>
+
         <p className="text-xs text-slate-600">Loi n° 36-96 • Note DRH N° 32/2017 • Année 2025/2026</p>
+
+        {/* Modal login par rôle */}
+        <AuthModal
+          isOpen={loginRole !== null}
+          onClose={() => setLoginRole(null)}
+          role={loginRole}
+          onSelectUser={handleSelectUser}
+        />
       </div>
     );
   }
@@ -558,18 +627,26 @@ export default function App() {
               formateur: 'Formateur',
               dr: 'Acteur DR',
             };
+            const pendingCount = role === 'formateur'
+              ? stages.filter(s => s.statut === 'depose').length
+              : 0;
             return (
               <button
                 key={role}
                 onClick={() => switchRole(role)}
                 title={labels[role]}
-                className={`w-full py-3 px-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer text-center leading-tight ${
+                className={`relative w-full py-3 px-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer text-center leading-tight ${
                   currentUser.role === role
                     ? `${colors[role]} text-white shadow-lg`
                     : 'text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
                 {labels[role]}
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
+                    {pendingCount}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -579,6 +656,7 @@ export default function App() {
         {currentUser.role === 'stagiaire' && (
           <StagiaireView
             currentUser={currentUser}
+            users={users}
             stages={stages}
             visites={visites}
             docs={regulatoryDocs}
@@ -676,9 +754,8 @@ export default function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        users={users}
-        currentUser={currentUser}
-        onSelectUser={(u) => setCurrentUser(u)}
+        role={loginRole ?? currentUser?.role ?? 'efp'}
+        onSelectUser={(u) => { handleSelectUser(u); setIsAuthModalOpen(false); }}
       />
       <ProfileModal
         isOpen={isProfileModalOpen}
