@@ -196,34 +196,34 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-nowrap items-center gap-1.5">
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <Upload className="w-4 h-4" />
-              <span>Importer stagiaires Excel</span>
+              <Upload className="w-3.5 h-3.5 shrink-0" />
+              <span>Importer Excel</span>
             </button>
             <button
               onClick={onOpenPrintM01}
-              className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <Printer className="w-4 h-4" />
-              <span>Générer Imprimé M01</span>
+              <Printer className="w-3.5 h-3.5 shrink-0" />
+              <span>Générer M01</span>
             </button>
             <button
               onClick={onOpenPrintM04}
-              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <FileText className="w-4 h-4" />
-              <span>Générer Synthèse M04</span>
+              <FileText className="w-3.5 h-3.5 shrink-0" />
+              <span>Synthèse M04</span>
             </button>
             <button
               onClick={onOpenMessaging}
-              className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <MessageSquare className="w-4 h-4" />
-              <span>Messagerie EFP / Stagiaires</span>
+              <MessageSquare className="w-3.5 h-3.5 shrink-0" />
+              <span>Messagerie</span>
             </button>
           </div>
         </div>
