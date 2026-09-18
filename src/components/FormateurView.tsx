@@ -156,6 +156,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   const totalVisitesEffectuees = formateurVisites.filter(v => v.dateEffectuee).length;
   const totalEntreprises = new Set(formateurStages.map(s => s.entreprise.nom)).size;
   const stagesToValidate = formateurStages.filter(s => s.statut === 'depose');
+  const groupesEnCharge = [...new Set(formateurStages.map(s => s.groupe).filter(Boolean))];
 
   return (
     <div className="space-y-6">
@@ -168,14 +169,30 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
               <span className="text-[11px] font-bold bg-blue-600/30 text-blue-300 border border-blue-500/30 px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                 Espace Formateur Conseiller FPA
               </span>
-              <span className="text-xs text-slate-400 font-mono">Matricule: {currentUser.matricule}</span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-100">
-              {currentUser.name}
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Établissement : <span className="text-slate-200 font-semibold">{currentUser.efp}</span> | Groupes en charge : <span className="text-slate-200 font-semibold">{currentUser.groupe}</span>
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-100">
+                {currentUser.name}
+              </h1>
+              <span className="text-xs font-mono bg-slate-700 border border-slate-600 text-slate-300 px-2.5 py-0.5 rounded-lg">
+                Matricule : <span className="text-white font-bold">{currentUser.matricule || '—'}</span>
+              </span>
+            </div>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1.5">
+              Établissement : <span className="text-slate-200 font-semibold">{currentUser.efp}</span>
             </p>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              <span className="text-xs text-slate-400">Groupes en charge :</span>
+              {groupesEnCharge.length > 0 ? (
+                groupesEnCharge.map(g => (
+                  <span key={g} className="text-[11px] font-bold bg-teal-600/25 text-teal-300 border border-teal-500/30 px-2 py-0.5 rounded-full">
+                    {g}
+                  </span>
+                ))
+              ) : (
+                <span className="text-[11px] text-slate-500 italic">Aucun stage assigné</span>
+              )}
+            </div>
           </div>
 
           {/* Action buttons */}
