@@ -1,5 +1,5 @@
 {
-  "buildCommand": "echo 'dist already built'",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": null
 }
