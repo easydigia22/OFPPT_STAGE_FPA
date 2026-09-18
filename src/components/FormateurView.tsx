@@ -198,6 +198,13 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Importer stagiaires Excel</span>
+            </button>
+            <button
               onClick={onOpenPrintM01}
               className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             >
@@ -217,13 +224,6 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
             >
               <MessageSquare className="w-4 h-4" />
               <span>Messagerie EFP / Stagiaires</span>
-            </button>
-            <button
-              onClick={() => setIsImportModalOpen(true)}
-              className="px-3.5 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-            >
-              <Upload className="w-4 h-4" />
-              <span>Importer stagiaires Excel</span>
             </button>
           </div>
         </div>
