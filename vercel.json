@@ -1,0 +1,5 @@
+{
+  "buildCommand": "echo 'dist already built'",
+  "outputDirectory": "dist",
+  "framework": null
+}
