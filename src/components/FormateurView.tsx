@@ -19,7 +19,8 @@ import {
   Filter,
   Eye,
   Check,
-  Trash2
+  Trash2,
+  UserPlus
 } from 'lucide-react';
 
 interface FormateurViewProps {
@@ -36,6 +37,7 @@ interface FormateurViewProps {
   onOpenMessaging: () => void;
   onDeleteVisite: (id: string) => void;
   onDeleteStage: (id: string) => void;
+  onOpenCreateStagiaire: () => void;
 }
 
 export const FormateurView: React.FC<FormateurViewProps> = ({
@@ -52,6 +54,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   onOpenMessaging,
   onDeleteVisite,
   onDeleteStage,
+  onOpenCreateStagiaire,
 }) => {
   const [activeTab, setActiveTab] = useState<'stagiaires' | 'visites' | 'imprimes' | 'reglementation'>('stagiaires');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -197,6 +200,13 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
 
           {/* Action buttons */}
           <div className="flex flex-nowrap items-center gap-1.5">
+            <button
+              onClick={onOpenCreateStagiaire}
+              className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shadow-sm"
+            >
+              <UserPlus className="w-3.5 h-3.5 shrink-0" />
+              <span>Nouveau Stagiaire</span>
+            </button>
             <button
               onClick={() => setIsImportModalOpen(true)}
               className="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap"

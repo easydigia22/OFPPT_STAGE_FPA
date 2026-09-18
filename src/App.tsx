@@ -337,9 +337,12 @@ export default function App() {
     db.plannings.delete(id).catch(console.error);
   };
 
-  const handleCreateStagiaire = (stagiaire: UserProfile) => {
-    setUsers(prev => [...prev, stagiaire]);
-    db.profiles.upsert(stagiaire).catch(console.error);
+  const handleCreateStagiaire = (stagiaire: UserProfile, tempPassword?: string) => {
+    const profile = tempPassword
+      ? { ...stagiaire, tempPassword, passwordChanged: false }
+      : stagiaire;
+    setUsers(prev => [...prev, profile]);
+    db.profiles.upsert(profile).catch(console.error);
   };
 
   const handleDeleteStage = (id: string) => {
@@ -770,6 +773,7 @@ export default function App() {
             onOpenMessaging={() => setIsCommunicationModalOpen(true)}
             onDeleteVisite={handleDeleteVisite}
             onDeleteStage={handleDeleteStage}
+            onOpenCreateStagiaire={() => setIsCreateStagiaireOpen(true)}
           />
         )}
         {currentUser.role === 'efp' && (
