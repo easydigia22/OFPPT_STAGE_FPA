@@ -98,6 +98,7 @@ export default function App() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isCommunicationModalOpen, setIsCommunicationModalOpen] = useState(false);
+  const [sidebarAccessError, setSidebarAccessError] = useState<UserRole | null>(null);
 
   const [isCreateStagiaireOpen, setIsCreateStagiaireOpen] = useState(false);
 
@@ -612,44 +613,129 @@ export default function App() {
       {/* Main Content + Right Sidebar */}
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
 
-        {/* Right Role Sidebar */}
-        <aside className="no-print hidden lg:flex flex-col items-center gap-2 py-6 px-2 bg-slate-950 border-r border-slate-800 order-first w-28 sticky top-16 self-start h-[calc(100vh-4rem)]">
-          {(['efp', 'stagiaire', 'formateur', 'dr'] as UserRole[]).map(role => {
-            const colors: Record<UserRole, string> = {
-              efp: 'bg-amber-600',
-              stagiaire: 'bg-emerald-600',
-              formateur: 'bg-blue-600',
-              dr: 'bg-purple-600',
-            };
-            const labels: Record<UserRole, string> = {
-              efp: 'Acteur EFP',
-              stagiaire: 'Stagiaire',
-              formateur: 'Formateur',
-              dr: 'Acteur DR',
-            };
+        {/* Role Sidebar */}
+        <aside className="no-print hidden lg:flex flex-col gap-3 py-8 px-3 bg-slate-950 border-r border-slate-800 order-first w-44 sticky top-16 self-start h-[calc(100vh-4rem)] overflow-y-auto">
+
+          {/* Header sidebar */}
+          <div className="text-center mb-2">
+            <p className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Espaces</p>
+          </div>
+
+          {([
+            {
+              role: 'efp' as UserRole,
+              label: 'Acteur EFP',
+              sub: 'Direction EFP',
+              icon: <Building2 className="w-6 h-6" />,
+              activeClass: 'bg-amber-600 text-white shadow-xl shadow-amber-900/50 ring-2 ring-amber-400/30',
+              inactiveClass: 'text-amber-400 border-2 border-amber-700/60 hover:border-amber-500 bg-amber-950/30',
+              lockColor: 'text-amber-700',
+            },
+            {
+              role: 'stagiaire' as UserRole,
+              label: 'Stagiaire',
+              sub: 'Stagiaire FPA',
+              icon: <GraduationCap className="w-6 h-6" />,
+              activeClass: 'bg-emerald-600 text-white shadow-xl shadow-emerald-900/50 ring-2 ring-emerald-400/30',
+              inactiveClass: 'text-emerald-400 border-2 border-emerald-700/60 hover:border-emerald-500 bg-emerald-950/30',
+              lockColor: 'text-emerald-700',
+            },
+            {
+              role: 'formateur' as UserRole,
+              label: 'Formateur',
+              sub: 'Conseiller FPA',
+              icon: <Users className="w-6 h-6" />,
+              activeClass: 'bg-blue-600 text-white shadow-xl shadow-blue-900/50 ring-2 ring-blue-400/30',
+              inactiveClass: 'text-blue-400 border-2 border-blue-700/60 hover:border-blue-500 bg-blue-950/30',
+              lockColor: 'text-blue-700',
+            },
+            {
+              role: 'dr' as UserRole,
+              label: 'Acteur DR',
+              sub: 'Direction Régionale',
+              icon: <MapPin className="w-6 h-6" />,
+              activeClass: 'bg-purple-600 text-white shadow-xl shadow-purple-900/50 ring-2 ring-purple-400/30',
+              inactiveClass: 'text-purple-400 border-2 border-purple-700/60 hover:border-purple-500 bg-purple-950/30',
+              lockColor: 'text-purple-700',
+            },
+          ]).map(({ role, label, sub, icon, activeClass, inactiveClass, lockColor }) => {
+            const isActive = currentUser.role === role;
+            const isError = sidebarAccessError === role;
             const pendingCount = role === 'formateur'
               ? stages.filter(s => s.statut === 'depose').length
               : 0;
+
             return (
-              <button
-                key={role}
-                onClick={() => switchRole(role)}
-                title={labels[role]}
-                className={`relative w-full py-3 px-2 rounded-xl text-[11px] font-bold transition-all cursor-pointer text-center leading-tight ${
-                  currentUser.role === role
-                    ? `${colors[role]} text-white shadow-lg`
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                {labels[role]}
-                {pendingCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center shadow-sm">
-                    {pendingCount}
+              <div key={role} className="flex flex-col gap-1">
+                <button
+                  onClick={() => {
+                    if (isActive) return;
+                    setSidebarAccessError(role);
+                    setTimeout(() => setSidebarAccessError(null), 3500);
+                  }}
+                  className={`relative w-full py-4 px-3 rounded-2xl font-bold transition-all text-center flex flex-col items-center gap-2 ${
+                    isActive ? `${activeClass} cursor-default` : `${inactiveClass} cursor-pointer`
+                  }`}
+                >
+                  {/* Icône */}
+                  <span className={`p-2 rounded-xl ${isActive ? 'bg-white/20' : 'bg-slate-900/60'}`}>
+                    {icon}
                   </span>
+
+                  {/* Label principal */}
+                  <span className="text-sm font-extrabold leading-tight">{label}</span>
+
+                  {/* Sous-titre */}
+                  <span className={`text-[10px] font-medium leading-tight ${isActive ? 'text-white/70' : 'opacity-60'}`}>
+                    {sub}
+                  </span>
+
+                  {/* Indicateur actif */}
+                  {isActive && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      Connecté
+                    </span>
+                  )}
+
+                  {/* Cadenas pour les autres */}
+                  {!isActive && (
+                    <Shield className={`w-3.5 h-3.5 ${lockColor} opacity-70`} />
+                  )}
+
+                  {/* Badge notification */}
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-5 h-5 px-1 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-md ring-2 ring-slate-950">
+                      {pendingCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Message accès refusé */}
+                {isError && (
+                  <div className="bg-red-950/80 border border-red-700/60 rounded-xl px-3 py-2.5 text-center animate-pulse">
+                    <p className="text-red-400 text-[10px] font-bold leading-snug">
+                      🔒 Accès refusé
+                    </p>
+                    <p className="text-red-500/80 text-[9px] mt-0.5 leading-tight">
+                      Vous n'êtes pas autorisé à accéder à l'espace <span className="font-bold text-red-400">{label}</span>.
+                    </p>
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
+
+          {/* Séparateur + déconnexion */}
+          <div className="mt-auto pt-4 border-t border-slate-800">
+            <button
+              onClick={handleLogout}
+              className="w-full flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-950/30 border border-transparent hover:border-red-900/50 transition-all text-xs font-bold"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="text-[10px]">Déconnexion</span>
+            </button>
+          </div>
         </aside>
 
       <main className="flex-1 p-4 sm:p-6">

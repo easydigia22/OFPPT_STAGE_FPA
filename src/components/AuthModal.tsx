@@ -52,6 +52,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, role, onS
       if (!authError && data.user) {
         const profile = await db.profiles.getByEmail(data.user.email!);
         if (profile) {
+          if (profile.role !== role) {
+            setError(`Ce compte n'est pas un profil "${ROLE_LABELS[role]}". Utilisez l'onglet correspondant à votre rôle.`);
+            setIsLoggingIn(false);
+            return;
+          }
           onSelectUser(profile);
           onClose();
           return;
@@ -61,6 +66,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, role, onS
       // Fallback: match by email in profiles table
       const profile = await db.profiles.getByEmail(email.trim().toLowerCase());
       if (profile) {
+        // Vérifier que le profil correspond au rôle demandé
+        if (profile.role !== role) {
+          setError(`Ce compte n'est pas un profil "${ROLE_LABELS[role]}". Utilisez l'onglet correspondant à votre rôle.`);
+          setIsLoggingIn(false);
+          return;
+        }
         // Check provisional password
         if (profile.tempPassword && profile.passwordChanged === false) {
           if (password !== profile.tempPassword) {
