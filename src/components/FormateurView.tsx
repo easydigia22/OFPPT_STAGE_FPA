@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Stage, Visite, UserProfile, RegulatoryDoc, FicheM01Uploaded } from '../types';
+import { Stage, Visite, UserProfile, RegulatoryDoc, FicheM01Uploaded, AffectationFPA } from '../types';
 import { ImportStagiairesModal } from './ImportStagiairesModal';
 import { db } from '../lib/db';
 import {
@@ -29,6 +29,7 @@ interface FormateurViewProps {
   visites: Visite[];
   docs: RegulatoryDoc[];
   fichesM01: FicheM01Uploaded[];
+  affectations: AffectationFPA[];
   onValidateStage: (stageId: string) => void;
   onAddOrUpdateVisite: (visite: Omit<Visite, 'id' | 'formateurId' | 'formateurMatricule' | 'formateurName' | 'efp' | 'directionRegionale'>) => void;
   onUploadFicheM01: (fiche: Omit<FicheM01Uploaded, 'id' | 'dateTeleversement'>) => void;
@@ -46,6 +47,7 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   visites,
   docs,
   fichesM01,
+  affectations,
   onValidateStage,
   onAddOrUpdateVisite,
   onUploadFicheM01,
@@ -159,7 +161,12 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
   const totalVisitesEffectuees = formateurVisites.filter(v => v.dateEffectuee).length;
   const totalEntreprises = new Set(formateurStages.map(s => s.entreprise.nom)).size;
   const stagesToValidate = formateurStages.filter(s => s.statut === 'depose');
-  const groupesEnCharge = [...new Set(formateurStages.map(s => s.groupe).filter(Boolean))];
+  const affectationsFormateur = affectations.filter(
+    a => a.formateurId === currentUser.id || a.formateurMatricule === currentUser.matricule
+  );
+  const groupesEnCharge = affectationsFormateur.length > 0
+    ? [...new Set(affectationsFormateur.map(a => a.groupe).filter(Boolean))]
+    : [...new Set(formateurStages.map(s => s.groupe).filter(Boolean))];
 
   return (
     <div className="space-y-6">
@@ -364,9 +371,9 @@ export const FormateurView: React.FC<FormateurViewProps> = ({
                 className="border border-slate-300 rounded-lg px-2.5 py-1 text-xs bg-white focus:outline-hidden"
               >
                 <option value="all">Tous les groupes</option>
-                <option value="DEV201">DEV201</option>
-                <option value="DEV202">DEV202</option>
-                <option value="GE201">GE201</option>
+                {groupesEnCharge.map(g => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
               </select>
             </div>
           </div>

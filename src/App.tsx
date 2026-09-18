@@ -765,6 +765,7 @@ export default function App() {
             visites={visites}
             docs={regulatoryDocs}
             fichesM01={fichesM01}
+            affectations={affectations}
             onValidateStage={handleValidateStage}
             onAddOrUpdateVisite={handleAddOrUpdateVisite}
             onUploadFicheM01={handleUploadFicheM01}
